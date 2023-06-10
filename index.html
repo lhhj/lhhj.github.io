@@ -21,7 +21,7 @@
         let canvas = document.getElementById('gameCanvas');
         let context = canvas.getContext('2d');
 
-        let player = {
+        let localPlayer = {
             x: 50,
             y: canvas.height - 50,
             width: 50,
@@ -29,114 +29,71 @@
             color: 'blue',
         };
 
-        let bullets = [];
-        let asteroids = [];
-        let score = 0;
+        let remotePlayer = {
+            x: 100,
+            y: canvas.height - 50,
+            width: 50,
+            height: 50,
+            color: 'green',
+        };
 
-        function createBullet() {
-            let bullet = {
-                x: player.x + player.width / 2,
-                y: player.y,
-                width: 10,
-                height: 20,
-                color: 'yellow',
-                speed: 5,
-            };
-            bullets.push(bullet);
-        }
+        //... Rest of your game code
 
-        function createAsteroid() {
-            let asteroid = {
-                x: Math.random() * canvas.width,
-                y: 0,
-                width: Math.random() * 50 + 10,
-                height: Math.random() * 50 + 10,
-                color: 'red',
-                speed: Math.random() * 2 + 1,
-            };
-            asteroids.push(asteroid);
-        }
-
-        function drawPlayer() {
+        function drawPlayer(player) {
             context.fillStyle = player.color;
             context.fillRect(player.x, player.y, player.width, player.height);
-        }
-
-        function drawBullets() {
-            bullets.forEach((bullet, i) => {
-                context.fillStyle = bullet.color;
-                context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-                bullet.y -= bullet.speed;
-
-                // Remove bullet if it goes out of the canvas
-                if (bullet.y < 0) {
-                    bullets.splice(i, 1);
-                }
-            });
-        }
-
-        function drawAsteroids() {
-            asteroids.forEach((asteroid, i) => {
-                context.fillStyle = asteroid.color;
-                context.fillRect(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
-                asteroid.y += asteroid.speed;
-
-                // Remove asteroid if it goes out of the canvas
-                if (asteroid.y > canvas.height) {
-                    asteroids.splice(i, 1);
-                }
-            });
-        }
-
-        function checkCollision() {
-            bullets.forEach((bullet, i) => {
-                asteroids.forEach((asteroid, j) => {
-                    if (bullet.x < asteroid.x + asteroid.width &&
-                        bullet.x + bullet.width > asteroid.x &&
-                        bullet.y < asteroid.y + asteroid.height &&
-                        bullet.y + bullet.height > asteroid.y) {
-                        // Collision detected, remove bullet and asteroid
-                        bullets.splice(i, 1);
-                        asteroids.splice(j, 1);
-                        score++;
-                    }
-                });
-            });
-        }
-
-        function drawScore() {
-            context.fillStyle = 'white';
-            context.font = '24px Arial';
-            context.fillText('Score: ' + score, 10, 30);
         }
 
         function gameLoop() {
             context.clearRect(0, 0, canvas.width, canvas.height);
 
-            drawPlayer();
-            drawBullets();
-            drawAsteroids();
-            checkCollision();
-            drawScore();
+            drawPlayer(localPlayer);
+            drawPlayer(remotePlayer);
 
-            if (Math.random() < 0.01) {
-                createAsteroid();
-            }
+            //... Rest of your game loop
 
             requestAnimationFrame(gameLoop);
         }
 
-        // Listen for mouse movement to update player position
+        // Assume pc is your established RTCPeerConnection
+        let pc = new RTCPeerConnection();
+        let dataChannel = pc.createDataChannel("playerData");
+
+        dataChannel.onopen = function(event) {
+            console.log('Data channel is open');
+        };
+
+        dataChannel.onmessage = function(event) {
+            console.log("Received message: " + event.data);
+            
+            // Update the position of the remote player.
+            let data = JSON.parse(event.data);
+            remotePlayer.x = data.x;
+            remotePlayer.y = data.y;
+        };
+
+        pc.ondatachannel = function(event) {
+            dataChannel = event.channel;
+            
+            dataChannel.onmessage = function(event) {
+                console.log("Received message: " + event.data);
+                
+                // Update the position of the remote player.
+                let data = JSON.parse(event.data);
+                remotePlayer.x = data.x;
+                remotePlayer.y = data.y;
+            };
+        };
+
         canvas.addEventListener('mousemove', function(e) {
-            player.x = e.clientX - canvas.offsetLeft - player.width / 2;
+            localPlayer.x = e.clientX - canvas.offsetLeft - localPlayer.width / 2;
+            
+            // Send the new position to the other peer.
+            let data = JSON.stringify({x: localPlayer.x, y: localPlayer.y});
+            dataChannel.send(data);
         });
 
-        // Listen for space bar to shoot bullets
-        window.addEventListener('keydown', function(e) {
-            if (e.code === 'Space') {
-                createBullet();
-            }
-        });
+        //... Rest of your event listeners
 
         gameLoop();
     </script>
