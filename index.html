@@ -4,138 +4,139 @@
     <title>Asteroid Shooter</title>
     <style>
         body {
-            background: #000;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Hubble_ultra_deep_field.jpg/600px-Hubble_ultra_deep_field.jpg') no-repeat center center fixed; 
+            background-size: cover;
             color: #fff;
             text-align: center;
         }
-        canvas {
-            margin: auto;
-            display: block;
-            background: #000;
-        }
-        #score, #highScore {
-            color: #fff;
-            position: absolute;
-            padding: 10px;
-        }
-        #highScore {
-            right: 0;
+
+        #gameCanvas {
+            background: rgba(0, 0, 0, 0.5);
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="score"></div>
-    <div id="highScore"></div>
-
     <script>
         let canvas = document.getElementById('gameCanvas');
-        let ctx = canvas.getContext('2d');
+        let context = canvas.getContext('2d');
 
         let player = {
-            x: canvas.width / 2,
+            x: 50,
             y: canvas.height - 50,
             width: 50,
             height: 50,
-            dx: 5
+            color: 'blue',
         };
 
         let bullets = [];
         let asteroids = [];
-        let asteroidSpeed = 2;
         let score = 0;
-        let highScore = localStorage.getItem('highScore') || 0;
-        let scoreText = document.getElementById('score');
-        let highScoreText = document.getElementById('highScore');
+
+        function createBullet() {
+            let bullet = {
+                x: player.x + player.width / 2,
+                y: player.y,
+                width: 10,
+                height: 20,
+                color: 'yellow',
+                speed: 5,
+            };
+            bullets.push(bullet);
+        }
+
+        function createAsteroid() {
+            let asteroid = {
+                x: Math.random() * canvas.width,
+                y: 0,
+                width: Math.random() * 50 + 10,
+                height: Math.random() * 50 + 10,
+                color: 'red',
+                speed: Math.random() * 2 + 1,
+            };
+            asteroids.push(asteroid);
+        }
 
         function drawPlayer() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+            context.fillStyle = player.color;
+            context.fillRect(player.x, player.y, player.width, player.height);
         }
 
         function drawBullets() {
-            ctx.fillStyle = 'red';
             bullets.forEach((bullet, i) => {
-                bullet.y -= 5;
-                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                context.fillStyle = bullet.color;
+                context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                bullet.y -= bullet.speed;
+
+                // Remove bullet if it goes out of the canvas
                 if (bullet.y < 0) {
                     bullets.splice(i, 1);
                 }
             });
         }
 
-        function generateAsteroids() {
-            let asteroid = {
-                x: Math.random() * (canvas.width - 50),
-                y: 0,
-                width: 50,
-                height: 50
-            };
-            asteroids.push(asteroid);
-        }
-
         function drawAsteroids() {
-            ctx.fillStyle = 'grey';
             asteroids.forEach((asteroid, i) => {
-                asteroid.y += asteroidSpeed;
-                ctx.fillRect(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
+                context.fillStyle = asteroid.color;
+                context.fillRect(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
+                asteroid.y += asteroid.speed;
+
+                // Remove asteroid if it goes out of the canvas
                 if (asteroid.y > canvas.height) {
                     asteroids.splice(i, 1);
                 }
             });
         }
 
-        function detectCollision() {
-            asteroids.forEach((asteroid, i) => {
-                bullets.forEach((bullet, j) => {
-                    if (bullet.x < asteroid.x + asteroid.width  && bullet.x + bullet.width  > asteroid.x &&
-                        bullet.y < asteroid.y + asteroid.height && bullet.y + bullet.height > asteroid.y) {
-                        asteroids.splice(i, 1);
-                        bullets.splice(j, 1);
+        function checkCollision() {
+            bullets.forEach((bullet, i) => {
+                asteroids.forEach((asteroid, j) => {
+                    if (bullet.x < asteroid.x + asteroid.width &&
+                        bullet.x + bullet.width > asteroid.x &&
+                        bullet.y < asteroid.y + asteroid.height &&
+                        bullet.y + bullet.height > asteroid.y) {
+                        // Collision detected, remove bullet and asteroid
+                        bullets.splice(i, 1);
+                        asteroids.splice(j, 1);
                         score++;
-                        if(score > highScore) {
-                            highScore = score;
-                            localStorage.setItem('highScore', highScore);
-                        }
-                        scoreText.innerText = "Score: " + score;
-                        highScoreText.innerText = "High Score: " + highScore;
                     }
                 });
             });
         }
 
+        function drawScore() {
+            context.fillStyle = 'white';
+            context.font = '24px Arial';
+            context.fillText('Score: ' + score, 10, 30);
+        }
+
         function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
             drawPlayer();
             drawBullets();
             drawAsteroids();
-            detectCollision();
+            checkCollision();
+            drawScore();
 
             if (Math.random() < 0.01) {
-                generateAsteroids();
+                createAsteroid();
             }
 
             requestAnimationFrame(gameLoop);
         }
 
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowRight' && player.x + player.width < canvas.width) {
-                player.x += player.dx;
-            } else if (e.key === 'ArrowLeft' && player.x > 0) {
-                player.x -= player.dx;
-            } else if (e.key === ' ') {
-                let bullet = {
-                    x: player.x + player.width / 2 - 2.5,
-                    y: player.y,
-                    width: 5,
-                    height: 15
-                };
-                bullets.push(bullet);
-            }
+        // Listen for mouse movement to update player position
+        canvas.addEventListener('mousemove', function(e) {
+            player.x = e.clientX - canvas.offsetLeft - player.width / 2;
         });
 
-        scoreText.innerText = "Score: " + score;
-        highScoreText.innerText = "High Score: " + highScore;
+        // Listen for space bar to shoot bullets
+        window.addEventListener('keydown', function(e) {
+            if (e.code === 'Space') {
+                createBullet();
+            }
+        });
 
         gameLoop();
     </script>
