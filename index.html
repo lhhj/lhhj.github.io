@@ -1,46 +1,143 @@
-<!DOCTYPE HTML>
-<!--
-	Aerial by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
+<!DOCTYPE html>
 <html>
-	<head>
-		<title>Aerial by HTML5 UP</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="assets/css/main.css" />
-		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-	</head>
-	<body class="is-preload">
-		<div id="wrapper">
-			<div id="bg"></div>
-			<div id="overlay"></div>
-			<div id="main">
+<head>
+    <title>Asteroid Shooter</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            text-align: center;
+        }
+        canvas {
+            margin: auto;
+            display: block;
+            background: #000;
+        }
+        #score, #highScore {
+            color: #fff;
+            position: absolute;
+            padding: 10px;
+        }
+        #highScore {
+            right: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="score"></div>
+    <div id="highScore"></div>
 
-				<!-- Header -->
-					<header id="header">
-						<h1>Leif Elgaard Høj</h1>
-						<p>Chief Technology Officer &nbsp;&bull;&nbsp; Geek &nbsp;&bull;&nbsp; Always Learning</p>
-						<nav>
-							<ul>
-								<li><a href="https://twitter.com/leif_eh" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
-								<li><a href="https://github.com/lhhj" class="icon brands fa-github"><span class="label">Github</span></a></li>
-								<li><a
-									href="#"
-									data-contact="bGVoQGJ1c2luZXNzbWFubi5kaw=="
-									data-subj="Q29udGFjdGluZyBmcm9tIGdpdGh1YiBwYWdl"
-									onfocus="this.href = 'mailto:' + atob(this.dataset.contact) + '?subject=' + atob(this.dataset.subj || '')"
-									class="icon solid fa-envelope"><span class="label">Email</span></a></li>
-							</ul>
-						</nav>
-					</header>
-			</div>
-		</div>
-		<script>
-			window.onload = function() { document.body.classList.remove('is-preload'); }
-			window.ontouchmove = function() { return false; }
-			window.onorientationchange = function() { document.body.scrollTop = 0; }
-		</script>
-	</body>
+    <script>
+        let canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+
+        let player = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            width: 50,
+            height: 50,
+            dx: 5
+        };
+
+        let bullets = [];
+        let asteroids = [];
+        let asteroidSpeed = 2;
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let scoreText = document.getElementById('score');
+        let highScoreText = document.getElementById('highScore');
+
+        function drawPlayer() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function drawBullets() {
+            ctx.fillStyle = 'red';
+            bullets.forEach((bullet, i) => {
+                bullet.y -= 5;
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                if (bullet.y < 0) {
+                    bullets.splice(i, 1);
+                }
+            });
+        }
+
+        function generateAsteroids() {
+            let asteroid = {
+                x: Math.random() * (canvas.width - 50),
+                y: 0,
+                width: 50,
+                height: 50
+            };
+            asteroids.push(asteroid);
+        }
+
+        function drawAsteroids() {
+            ctx.fillStyle = 'grey';
+            asteroids.forEach((asteroid, i) => {
+                asteroid.y += asteroidSpeed;
+                ctx.fillRect(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
+                if (asteroid.y > canvas.height) {
+                    asteroids.splice(i, 1);
+                }
+            });
+        }
+
+        function detectCollision() {
+            asteroids.forEach((asteroid, i) => {
+                bullets.forEach((bullet, j) => {
+                    if (bullet.x < asteroid.x + asteroid.width  && bullet.x + bullet.width  > asteroid.x &&
+                        bullet.y < asteroid.y + asteroid.height && bullet.y + bullet.height > asteroid.y) {
+                        asteroids.splice(i, 1);
+                        bullets.splice(j, 1);
+                        score++;
+                        if(score > highScore) {
+                            highScore = score;
+                            localStorage.setItem('highScore', highScore);
+                        }
+                        scoreText.innerText = "Score: " + score;
+                        highScoreText.innerText = "High Score: " + highScore;
+                    }
+                });
+            });
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+            drawBullets();
+            drawAsteroids();
+            detectCollision();
+
+            if (Math.random() < 0.01) {
+                generateAsteroids();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' && player.x + player.width < canvas.width) {
+                player.x += player.dx;
+            } else if (e.key === 'ArrowLeft' && player.x > 0) {
+                player.x -= player.dx;
+            } else if (e.key === ' ') {
+                let bullet = {
+                    x: player.x + player.width / 2 - 2.5,
+                    y: player.y,
+                    width: 5,
+                    height: 15
+                };
+                bullets.push(bullet);
+            }
+        });
+
+        scoreText.innerText = "Score: " + score;
+        highScoreText.innerText = "High Score: " + highScore;
+
+        gameLoop();
+    </script>
+</body>
 </html>
