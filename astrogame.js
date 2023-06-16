@@ -3,6 +3,7 @@ const gameBoard = document.getElementById('game-board');
 const myAstronaut = document.getElementById('my-astronaut');
 const connectButton = document.getElementById('connect-button');
 const otherPeerIdInput = document.getElementById('other-peer-id');
+const peerId = document.getElementById('my-peer-id');
 
 // Create a new Peer without API key
 const peer = new Peer();
@@ -29,6 +30,7 @@ const handleMousemove = (event) => {
 // This will run when the Peer is open and ready to start connections
 peer.on('open', function(id) {
     console.log('My peer ID is: ' + id);
+    peerId.innerText = id;
 });
 
 let connections = [];
