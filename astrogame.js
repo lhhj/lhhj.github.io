@@ -30,7 +30,7 @@ const handleMousemove = (event) => {
 // This will run when the Peer is open and ready to start connections
 peer.on('open', function(id) {
     console.log('My peer ID is: ' + id);
-    peerId.innerText = id;
+    peerId.value = id;
 });
 
 let connections = [];
