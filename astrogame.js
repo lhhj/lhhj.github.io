@@ -1,6 +1,7 @@
 // Get HTML elements
 const gameBoard = document.getElementById('game-board');
 const myAstronaut = document.getElementById('my-astronaut');
+const otherAstronaut = document.getElementById('other-astronaut');
 const connectButton = document.getElementById('connect-button');
 const otherPeerIdInput = document.getElementById('other-peer-id');
 const peerId = document.getElementById('my-peer-id');
@@ -23,8 +24,10 @@ const handleMousemove = (event) => {
 
     moveAstronaut(myAstronaut, currentTop);
 
-    // If we have any connections, send the updated position to all peers
-    connections.forEach(conn => conn.send(currentTop));
+    // If we have a connection, send the updated position
+    if (conn) {
+        conn.send(currentTop);
+    }
 };
 
 // This will run when the Peer is open and ready to start connections
@@ -33,50 +36,26 @@ peer.on('open', function(id) {
     peerId.value = id;
 });
 
-let connections = [];
+let conn = null;
 
 // Wait for a connection
 peer.on('connection', function(connection) {
-    // Create a new astronaut for this connection
-    const astronaut = document.createElement('div');
-    astronaut.classList.add('astronaut');
-    astronaut.style.background = 'red';
-    astronaut.style.top = '0px';
-    gameBoard.appendChild(astronaut);
+    conn = connection;
 
-    // Store the connection and associated astronaut
-    connections.push({
-        conn: connection,
-        astronaut: astronaut
-    });
-
-    // Update astronaut's position when we receive data
-    connection.on('data', function(data) {
-        moveAstronaut(astronaut, data);
+    // Update other astronaut's position when we receive data
+    conn.on('data', function(data) {
+        moveAstronaut(otherAstronaut, data);
     });
 });
 
 // Make a connection when a button is clicked
 connectButton.onclick = function() {
     const otherPeerId = otherPeerIdInput.value;
-    const conn = peer.connect(otherPeerId);
+    conn = peer.connect(otherPeerId);
 
-    // Create a new astronaut for this connection
-    const astronaut = document.createElement('div');
-    astronaut.classList.add('astronaut');
-    astronaut.style.background = 'red';
-    astronaut.style.top = '0px';
-    gameBoard.appendChild(astronaut);
-
-    // Store the connection and associated astronaut
-    connections.push({
-        conn: conn,
-        astronaut: astronaut
-    });
-
-    // Update astronaut's position when we receive data
+    // Update other astronaut's position when we receive data
     conn.on('data', function(data) {
-        moveAstronaut(astronaut, data);
+        moveAstronaut(otherAstronaut, data);
     });
 };
 
