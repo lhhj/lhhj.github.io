@@ -1,10 +1,34 @@
 // Get HTML elements
+// Create score variables for each player
 const gameBoard = document.getElementById('game-board');
 const myAstronaut = document.getElementById('my-astronaut');
 const otherAstronaut = document.getElementById('other-astronaut');
 const connectButton = document.getElementById('connect-button');
 const otherPeerIdInput = document.getElementById('other-peer-id');
 const peerId = document.getElementById('my-peer-id');
+// Create score variables for each player
+let myScore = 0;
+let otherScore = 0;
+
+// Create HTML elements to display the scores
+const myScoreElement = document.getElementById('my-score');
+const otherScoreElement = document.getElementById('other-score');
+
+// Update the display whenever a player's score changes
+function updateScoreDisplay() {
+  myScoreElement.innerText = myScore;
+  otherScoreElement.innerText = otherScore;
+}
+
+// Increment a player's score every second they are connected
+setInterval(function() {
+  if (conn) {
+    myScore++;
+    updateScoreDisplay();
+    conn.send({ type: 'score', value: myScore });
+  }
+}, 1000);   
+
 
 // Create a new Peer without API key
 const peer = new Peer();
@@ -44,7 +68,13 @@ peer.on('connection', function(connection) {
 
     // Update other astronaut's position when we receive data
     conn.on('data', function(data) {
-        moveAstronaut(otherAstronaut, data);
+        if (data.type === 'score') {
+            otherScore = data.value;
+            updateScoreDisplay();
+          } 
+        else {
+            moveAstronaut(otherAstronaut, data)
+        };
     });
 });
 
