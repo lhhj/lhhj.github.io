@@ -3,17 +3,36 @@
     <head>
         <title>PeerJS AstroGame</title>
         <script src="https://cdn.jsdelivr.net/npm/peerjs@1.3.1/dist/peerjs.min.js"></script>
+        <style>
+            .target {
+                position: absolute;
+                bottom: 0;
+                width: 20px;
+                height: 20px;
+                background-color: red;
+              }
+              
+              .bullet {
+                position: absolute;
+                width: 5px;
+                height: 10px;
+                background-color: black;
+              }
+              
+        </style>
     </head>
     <body>
         <h1>PeerJS AstroGame</h1>
         <input type="text" id="other-peer-id" placeholder="Other peer's ID">
         <input type="text" id="my-peer-id" placeholder="My peer ID">
         <button id="connect-button">Connect</button>
-        <div>My Score :<div id="my-score"></div></div>
-        Other Player :<div id="other-score"></div>
+        <div>My Score :<div id="my-score">0</div></div>
+        <div>Other Player :</div><div id="other-score">0</div>
         <div id="game-board" style="position: relative; height: 600px; width: 800px; border: 1px solid black;">
             <div id="my-astronaut" style="position: absolute; width: 50px; height: 50px; background: blue; top: 0;"></div>
             <div id="other-astronaut" style="position: absolute; width: 50px; height: 50px; background: red; top: 0;"></div>
+            <div id="targets"></div>
+            <div id="bullets"></div>
         </div>
 
         <script src="astrogame.js"></script>
