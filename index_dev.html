@@ -1,43 +1,47 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>PeerJS AstroGame</title>
+<body>
+    
+<canvas id="gameCanvas" width="480" height="320"></canvas>
 
-        <script src="https://cdn.jsdelivr.net/npm/peerjs@1.3.1/dist/peerjs.min.js"></script>
-        <style>
-            .target {
-                position: absolute;
-                bottom: 0;
-                width: 20px;
-                height: 20px;
-                background-color: red;
-              }
-              
-              .bullet {
-                position: absolute;
-                width: 5px;
-                height: 10px;
-                background-color: black;
-              }
-              
-        </style>
-    </head>
-    <body>
-        <h1>PeerJS AstroGame</h1>
-        <h1>join this id c24465d9-2ae6-4a13-8ac9-389b47731003</h1>
- 
-        <input type="text" id="other-peer-id" placeholder="Other peer's ID">
-        <input type="text" id="my-peer-id" placeholder="My peer ID">
-        <button id="connect-button">Connect</button>
-        <div>My Score :<div id="my-score">0</div></div>
-        <div>Other Player :</div><div id="other-score">0</div>
-        <div id="game-board" style="position: relative; height: 600px; width: 800px; border: 1px solid black;">
-            <div id="my-astronaut" style="position: absolute; width: 50px; height: 50px; background: blue; top: 0;"></div>
-            <div id="other-astronaut" style="position: absolute; width: 50px; height: 50px; background: red; top: 0;"></div>
-            <div id="targets"></div>
-            <div id="bullets"></div>
-        </div>
+<script>
+    var canvas = document.getElementById("gameCanvas");
+    var ctx = canvas.getContext("2d");
+    
+    // Game objects
+    var player = {x: 10, y: 10, width: 50, height: 50, color: "#00A"};
+    var enemy = {x: 100, y: 100, width: 50, height: 50, color: "#A00"};
 
-        <script src="astrogame.js"></script>
-    </body>
+    // Game loop
+    function gameLoop() {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw the player
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+        
+        // Draw the enemy
+        ctx.fillStyle = enemy.color;
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+        // Game logic goes here. For example, to move the enemy towards the player:
+        if (enemy.x < player.x) {
+            enemy.x += 1;
+        } else if (enemy.x > player.x) {
+            enemy.x -= 1;
+        }
+
+        if (enemy.y < player.y) {
+            enemy.y += 1;
+        } else if (enemy.y > player.y) {
+            enemy.y -= 1;
+        }
+    }
+
+    // Start the game loop
+    setInterval(gameLoop, 1000 / 60); // 60 frames per second
+</script>
+
+</body>
 </html>
