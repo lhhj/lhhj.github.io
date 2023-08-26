@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background-color: black;
+  }
+
+  #game-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+  }
+
+  #rocket {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) rotate(0deg);
+    transition: transform 0.1s ease-in-out;
+  }
+  
+  #space-station {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 100px;
+  }
+  
+  #score {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: cyan;
+  }
+
+  #acceleration {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    color: red;
+  }
+  
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="rocket">🚀</div>
+  <div id="space-station">🛰️</div>
+  <div id="score">Score: 0</div>
+  <div id="acceleration">Acceleration: 0</div>
+</div>
+
+<script>
+  const rocket = document.getElementById('rocket');
+  const spaceStation = document.getElementById('space-station');
+  const scoreDisplay = document.getElementById('score');
+  const accelerationDisplay = document.getElementById('acceleration');
+
+  let rocketX = window.innerWidth / 2;
+  let rocketY = window.innerHeight;
+  let rocketSpeedX = 0;
+  let rocketSpeedY = 0;
+  let rocketRotation = 0;
+  let score = 0;
+  let accelerationValue = 0;
+  let accelerating = false;
+  const accelerationIncrement = 0.01;
+  const accelerationDecrement = 0.005;
+  const maxRocketSpeed = 5;
+  const rotationSpeed = 5;
+
+  function updateRocketPosition() {
+    if (accelerating) {
+      accelerationValue = Math.min(0.2, accelerationValue + accelerationIncrement);
+    } else {
+      accelerationValue = Math.max(0, accelerationValue - accelerationDecrement);
+    }
+
+    rocketSpeedX = Math.max(-maxRocketSpeed, Math.min(rocketSpeedX + accelerationValue * Math.sin(rocketRotation * Math.PI / 180), maxRocketSpeed));
+    rocketSpeedY = Math.max(-maxRocketSpeed, Math.min(rocketSpeedY + accelerationValue * -Math.cos(rocketRotation * Math.PI / 180), maxRocketSpeed));
+
+    rocketX = Math.max(0, Math.min(window.innerWidth - rocket.offsetWidth, rocketX + rocketSpeedX));
+    rocketY = Math.max(0, Math.min(window.innerHeight - rocket.offsetHeight, rocketY - rocketSpeedY));
+    rocket.style.left = rocketX + 'px';
+    rocket.style.bottom = rocketY + 'px';
+
+    accelerationDisplay.textContent = `Acceleration: ${accelerationValue.toFixed(2)}`;
+    
+    checkCollision();
+  }
+
+  function checkCollision() {
+    let rocketRect = rocket.getBoundingClientRect();
+    let stationRect = spaceStation.getBoundingClientRect();
+    
+    if (
+      rocketRect.bottom >= stationRect.top &&
+      rocketRect.top <= stationRect.bottom &&
+      rocketRect.right >= stationRect.left &&
+      rocketRect.left <= stationRect.right
+    ) {
+      score++;
+      scoreDisplay.textContent = 'Score: ' + score;
+    }
+  }
+
+  function handleKeyPress(event) {
+    if (event.key === ' ') {
+      accelerating = true;
+    } else if (event.key === 'ArrowLeft') {
+      rocketRotation -= rotationSpeed;
+    } else if (event.key === 'ArrowRight') {
+      rocketRotation += rotationSpeed;
+    }
+    rocket.style.transform = `translateX(-50%) rotate(${rocketRotation}deg)`;
+  }
+
+  function handleKeyUp(event) {
+    if (event.key === ' ') {
+      accelerating = false;
+    }
+  }
+
+  document.addEventListener('keydown', handleKeyPress);
+  document.addEventListener('keyup', handleKeyUp);
+
+  setInterval(updateRocketPosition, 1000 / 30); // Update rocket position 30 times per second
+</script>
+
+</body>
+</html>
