@@ -2,158 +2,230 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Video, Gyro & Bluetooth Capture</title>
+  <title>Record Video, Gyro & Upload as ZIP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Azure Blob Storage SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@azure/storage-blob@latest/dist/browser/azure-storage-blob.min.js"></script>
+  <!-- JSZip Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 20px;
-    }
-    video {
-      width: 100%;
-      height: auto;
-      background: #000;
-    }
-    #gyro-data,
-    #bluetooth-data {
-      margin-top: 20px;
-      font-size: 18px;
-    }
-    button {
-      margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
+    body { font-family: sans-serif; margin: 20px; }
+    video { border: 1px solid #000; width: 320px; height: 240px; }
+    button { font-size: 16px; padding: 10px 20px; margin: 5px; }
+    #status { margin-top: 20px; }
   </style>
 </head>
 <body>
-  <h1>Video, Gyro & Bluetooth Capture</h1>
+  <h1>Record Video, Gyro Data & Upload as ZIP</h1>
   
-  <!-- Video display -->
+  <!-- Video Preview -->
   <video id="video" autoplay playsinline></video>
   
-  <!-- Gyroscope section -->
-  <button id="enableGyro">Enable Gyro Data</button>
-  <div id="gyro-data">
-    <p>Alpha (z-axis): <span id="alpha">0</span></p>
-    <p>Beta (x-axis): <span id="beta">0</span></p>
-    <p>Gamma (y-axis): <span id="gamma">0</span></p>
+  <!-- Controls -->
+  <div>
+    <!-- On iOS you must request gyro permission with a user gesture -->
+    <button id="enableGyro">Enable Gyro (iOS)</button>
+    <button id="startRecording">Start Recording</button>
+    <button id="stopRecording" disabled>Stop Recording</button>
   </div>
   
-  <!-- Bluetooth section -->
-  <button id="connectBluetooth">Connect Bluetooth</button>
-  <div id="bluetooth-data">
-    <p>Bluetooth Signal Strength (RSSI): <span id="bluetooth-signal">No data</span></p>
-  </div>
+  <!-- Status Display -->
+  <div id="status"></div>
   
   <script>
-    // ------------------------------
-    // 1. Video Capture
-    // ------------------------------
-    async function startVideo() {
-      try {
-        // Request video from the rear camera (if available)
-        const constraints = { video: { facingMode: { ideal: "environment" } }, audio: false };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        const videoElement = document.getElementById("video");
-        videoElement.srcObject = stream;
-      } catch (error) {
-        console.error("Error accessing camera:", error);
-      }
+    // ===========================================
+    // Global Variables
+    // ===========================================
+    let videoStream;
+    let mediaRecorder;
+    let recordedChunks = [];
+    let isRecording = false;
+    // Array to hold gyro data rows (CSV rows)
+    let gyroData = [];
+
+    // ===========================================
+    // UI Utility
+    // ===========================================
+    function updateStatus(msg) {
+      document.getElementById("status").textContent = msg;
+      console.log(msg);
     }
-    
-    // ------------------------------
-    // 2. Gyroscope Capture
-    // ------------------------------
-    function startGyro() {
-      function handleOrientation(event) {
-        document.getElementById("alpha").textContent = event.alpha ? event.alpha.toFixed(2) : "N/A";
-        document.getElementById("beta").textContent = event.beta ? event.beta.toFixed(2) : "N/A";
-        document.getElementById("gamma").textContent = event.gamma ? event.gamma.toFixed(2) : "N/A";
-      }
-      
-      if (window.DeviceOrientationEvent) {
-        window.addEventListener("deviceorientation", handleOrientation);
-      } else {
-        console.error("Device Orientation API not supported on this device.");
-      }
-    }
-    
-    // Request permission for iOS 13+ devices
-    function requestGyroPermission() {
+
+    // ===========================================
+    // Gyro Data Capture
+    // ===========================================
+    // Request permission for device orientation on iOS (if needed) and add listener.
+    function enableGyro() {
       if (typeof DeviceOrientationEvent !== 'undefined' &&
           typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
           .then(response => {
-            if (response === "granted") {
-              startGyro();
+            if (response === 'granted') {
+              window.addEventListener('deviceorientation', recordGyro);
+              updateStatus("Gyro enabled (permission granted).");
             } else {
-              alert("Permission not granted for device orientation data.");
+              updateStatus("Gyro permission not granted.");
             }
           })
-          .catch(error => {
-            console.error("Error requesting device orientation permission:", error);
+          .catch(err => {
+            console.error("Gyro permission error:", err);
+            updateStatus("Gyro permission error: " + err.message);
           });
       } else {
-        // If not required, simply start capturing
-        startGyro();
+        // For non-iOS or when permission not required.
+        window.addEventListener('deviceorientation', recordGyro);
+        updateStatus("Gyro enabled (no explicit permission needed).");
       }
     }
-    
-    // ------------------------------
-    // 3. Bluetooth RSSI Capture
-    // ------------------------------
-    let latestBluetoothRssi = null;
-    
-    async function connectBluetooth() {
-      if (!navigator.bluetooth) {
-        alert("Web Bluetooth API is not available in this browser.");
+
+    // Event handler that records gyro data when recording is active.
+    function recordGyro(event) {
+      if (isRecording) {
+        const timestamp = new Date().toISOString();
+        // Use "N/A" if a value is nullish.
+        const alpha = event.alpha !== null ? event.alpha.toFixed(2) : "N/A";
+        const beta  = event.beta  !== null ? event.beta.toFixed(2)  : "N/A";
+        const gamma = event.gamma !== null ? event.gamma.toFixed(2) : "N/A";
+        // Append a CSV-formatted row.
+        gyroData.push(`${timestamp},${alpha},${beta},${gamma}`);
+      }
+    }
+
+    // ===========================================
+    // Video Initialization & Recording
+    // ===========================================
+    async function initVideo() {
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById("video").srcObject = videoStream;
+      } catch (err) {
+        updateStatus("Error accessing media devices: " + err.message);
+      }
+    }
+
+    function startRecording() {
+      if (!videoStream) {
+        updateStatus("No video stream available.");
         return;
       }
       
+      // Reset arrays and add CSV header for gyro data.
+      recordedChunks = [];
+      gyroData = ["timestamp,alpha,beta,gamma"];
+      
+      // Create the MediaRecorder instance.
       try {
-        // Request a Bluetooth device.
-        // Using acceptAllDevices for demonstration; ideally, use filters.
-        const device = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: []  // Add specific GATT services if needed.
-        });
-        
-        // Check if the device supports watching advertisements.
-        if (device.watchAdvertisements) {
-          // Listen for advertisement events which include the RSSI value.
-          device.addEventListener('advertisementreceived', event => {
-            latestBluetoothRssi = event.rssi;
-            console.log('Advertisement received. RSSI:', event.rssi);
-          });
-          
-          try {
-            await device.watchAdvertisements();
-            console.log("Started watching advertisements.");
-          } catch (error) {
-            console.error("Error starting advertisement watch:", error);
-          }
-        } else {
-          console.warn("watchAdvertisements is not supported on this device.");
-          alert("This device does not support advertisement watching.");
+        mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm' });
+      } catch (e) {
+        updateStatus("MediaRecorder error: " + e.message);
+        return;
+      }
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunks.push(e.data);
         }
-      } catch (error) {
-        console.error("Error connecting to Bluetooth device:", error);
+      };
+      
+      mediaRecorder.onstart = () => {
+        isRecording = true;
+        updateStatus("Recording started...");
+        document.getElementById("startRecording").disabled = true;
+        document.getElementById("stopRecording").disabled = false;
+      };
+      
+      mediaRecorder.onstop = () => {
+        isRecording = false;
+        updateStatus("Recording stopped. Processing data...");
+        createAndUploadZip();
+        document.getElementById("startRecording").disabled = false;
+        document.getElementById("stopRecording").disabled = true;
+      };
+      
+      mediaRecorder.start();
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
       }
     }
-    
-    // Update the Bluetooth signal display every 1 second.
-    setInterval(() => {
-      document.getElementById("bluetooth-signal").textContent =
-        latestBluetoothRssi !== null ? latestBluetoothRssi + " dBm" : "No data";
-    }, 1000);
-    
-    // ------------------------------
-    // Initialization
-    // ------------------------------
-    window.addEventListener("load", startVideo);
-    document.getElementById("enableGyro").addEventListener("click", requestGyroPermission);
-    document.getElementById("connectBluetooth").addEventListener("click", connectBluetooth);
+
+    // ===========================================
+    // Create ZIP file and Upload to Azure Blob Storage
+    // ===========================================
+    async function createAndUploadZip() {
+      // Combine recorded video chunks.
+      const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+      
+      // Use JSZip to create a ZIP archive.
+      const zip = new JSZip();
+      zip.file("video.webm", videoBlob);
+      
+      // Create a CSV file with the gyro data.
+      const gyroCSV = gyroData.join("\n");
+      zip.file("gyro.csv", gyroCSV);
+      
+      updateStatus("Zipping files...");
+      try {
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        updateStatus("ZIP file created. Uploading to Azure...");
+        uploadZipToAzure(zipBlob);
+      } catch (err) {
+        console.error("ZIP creation error:", err);
+        updateStatus("Error creating ZIP: " + err.message);
+      }
+    }
+
+    // ===========================================
+    // Azure Blob Storage Upload
+    // ===========================================
+    // Replace these values with your own (for demo only).
+    const accountName = "capturedatasor";
+    const sasToken = "sp=r&st=2025-02-10T21:40:11Z&se=2025-02-11T05:40:11Z&spr=https&sv=2022-11-02&sr=c&sig=tOMpZTVi%2FDtzMSa811olTJFmaj0WYsCRmWVW1mUu40w%3D"; // Do not embed long‑lived tokens in production.
+    const containerName = "stor";
+    const blobName = "recording.zip";
+
+    const blobServiceClient = new azblob.BlobServiceClient(
+      `https://${accountName}.blob.core.windows.net/?${sasToken}`
+    );
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+
+    async function ensureContainerExists() {
+      try {
+        await containerClient.createIfNotExists();
+        updateStatus("Container is ready.");
+      } catch (err) {
+        console.error("Container error:", err);
+        updateStatus("Container error: " + err.message);
+      }
+    }
+
+    async function uploadZipToAzure(zipBlob) {
+      try {
+        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+        await blockBlobClient.uploadData(zipBlob, {
+          blobHTTPHeaders: { blobContentType: "application/zip" }
+        });
+        updateStatus("Upload successful!");
+      } catch (err) {
+        console.error("Upload error:", err);
+        updateStatus("Upload error: " + err.message);
+      }
+    }
+
+    // ===========================================
+    // Event Listeners
+    // ===========================================
+    document.getElementById("enableGyro").addEventListener("click", enableGyro);
+    document.getElementById("startRecording").addEventListener("click", startRecording);
+    document.getElementById("stopRecording").addEventListener("click", stopRecording);
+
+    // Initialize on load.
+    window.addEventListener("load", async () => {
+      await initVideo();
+      await ensureContainerExists();
+    });
   </script>
 </body>
 </html>
