@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Video & Gyro Capture</title>
+  <title>Video, Gyro & Bluetooth Capture</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -14,7 +14,8 @@
       height: auto;
       background: #000;
     }
-    #gyro-data {
+    #gyro-data,
+    #bluetooth-data {
       margin-top: 20px;
       font-size: 18px;
     }
@@ -26,25 +27,32 @@
   </style>
 </head>
 <body>
-  <h1>iPhone Video & Gyro Capture</h1>
-  <!-- Video element for camera feed -->
+  <h1>Video, Gyro & Bluetooth Capture</h1>
+  
+  <!-- Video display -->
   <video id="video" autoplay playsinline></video>
-
-  <!-- Button to request gyroscope access (needed on iOS 13+) -->
+  
+  <!-- Gyroscope section -->
   <button id="enableGyro">Enable Gyro Data</button>
-
-  <!-- Display for gyroscope (device orientation) data -->
   <div id="gyro-data">
     <p>Alpha (z-axis): <span id="alpha">0</span></p>
     <p>Beta (x-axis): <span id="beta">0</span></p>
     <p>Gamma (y-axis): <span id="gamma">0</span></p>
   </div>
-
+  
+  <!-- Bluetooth section -->
+  <button id="connectBluetooth">Connect Bluetooth</button>
+  <div id="bluetooth-data">
+    <p>Bluetooth Signal Strength (RSSI): <span id="bluetooth-signal">No data</span></p>
+  </div>
+  
   <script>
-    // Start video capture using getUserMedia
+    // ------------------------------
+    // 1. Video Capture
+    // ------------------------------
     async function startVideo() {
       try {
-        // Request video with the environment (rear) camera if available
+        // Request video from the rear camera (if available)
         const constraints = { video: { facingMode: { ideal: "environment" } }, audio: false };
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         const videoElement = document.getElementById("video");
@@ -53,26 +61,26 @@
         console.error("Error accessing camera:", error);
       }
     }
-
-    // Start capturing gyroscope (device orientation) data
+    
+    // ------------------------------
+    // 2. Gyroscope Capture
+    // ------------------------------
     function startGyro() {
       function handleOrientation(event) {
-        // event.alpha, event.beta, and event.gamma provide the orientation data
         document.getElementById("alpha").textContent = event.alpha ? event.alpha.toFixed(2) : "N/A";
         document.getElementById("beta").textContent = event.beta ? event.beta.toFixed(2) : "N/A";
         document.getElementById("gamma").textContent = event.gamma ? event.gamma.toFixed(2) : "N/A";
       }
-
+      
       if (window.DeviceOrientationEvent) {
         window.addEventListener("deviceorientation", handleOrientation);
       } else {
         console.error("Device Orientation API not supported on this device.");
       }
     }
-
-    // Request permission for device orientation events (necessary on iOS 13+)
+    
+    // Request permission for iOS 13+ devices
     function requestGyroPermission() {
-      // Check if the API requires explicit permission (iOS 13+)
       if (typeof DeviceOrientationEvent !== 'undefined' &&
           typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
@@ -87,16 +95,65 @@
             console.error("Error requesting device orientation permission:", error);
           });
       } else {
-        // If not iOS 13+ (or permission not required), just start capturing data
+        // If not required, simply start capturing
         startGyro();
       }
     }
-
-    // Start the video stream as soon as the page loads
+    
+    // ------------------------------
+    // 3. Bluetooth RSSI Capture
+    // ------------------------------
+    let latestBluetoothRssi = null;
+    
+    async function connectBluetooth() {
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth API is not available in this browser.");
+        return;
+      }
+      
+      try {
+        // Request a Bluetooth device.
+        // Using acceptAllDevices for demonstration; ideally, use filters.
+        const device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: []  // Add specific GATT services if needed.
+        });
+        
+        // Check if the device supports watching advertisements.
+        if (device.watchAdvertisements) {
+          // Listen for advertisement events which include the RSSI value.
+          device.addEventListener('advertisementreceived', event => {
+            latestBluetoothRssi = event.rssi;
+            console.log('Advertisement received. RSSI:', event.rssi);
+          });
+          
+          try {
+            await device.watchAdvertisements();
+            console.log("Started watching advertisements.");
+          } catch (error) {
+            console.error("Error starting advertisement watch:", error);
+          }
+        } else {
+          console.warn("watchAdvertisements is not supported on this device.");
+          alert("This device does not support advertisement watching.");
+        }
+      } catch (error) {
+        console.error("Error connecting to Bluetooth device:", error);
+      }
+    }
+    
+    // Update the Bluetooth signal display every 1 second.
+    setInterval(() => {
+      document.getElementById("bluetooth-signal").textContent =
+        latestBluetoothRssi !== null ? latestBluetoothRssi + " dBm" : "No data";
+    }, 1000);
+    
+    // ------------------------------
+    // Initialization
+    // ------------------------------
     window.addEventListener("load", startVideo);
-
-    // Bind the button to request gyroscope permission and start capturing data
     document.getElementById("enableGyro").addEventListener("click", requestGyroPermission);
+    document.getElementById("connectBluetooth").addEventListener("click", connectBluetooth);
   </script>
 </body>
 </html>
