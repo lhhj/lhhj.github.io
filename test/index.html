@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Video & Gyro Capture</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    video {
+      width: 100%;
+      height: auto;
+      background: #000;
+    }
+    #gyro-data {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>iPhone Video & Gyro Capture</h1>
+  <!-- Video element for camera feed -->
+  <video id="video" autoplay playsinline></video>
+
+  <!-- Button to request gyroscope access (needed on iOS 13+) -->
+  <button id="enableGyro">Enable Gyro Data</button>
+
+  <!-- Display for gyroscope (device orientation) data -->
+  <div id="gyro-data">
+    <p>Alpha (z-axis): <span id="alpha">0</span></p>
+    <p>Beta (x-axis): <span id="beta">0</span></p>
+    <p>Gamma (y-axis): <span id="gamma">0</span></p>
+  </div>
+
+  <script>
+    // Start video capture using getUserMedia
+    async function startVideo() {
+      try {
+        // Request video with the environment (rear) camera if available
+        const constraints = { video: { facingMode: { ideal: "environment" } }, audio: false };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const videoElement = document.getElementById("video");
+        videoElement.srcObject = stream;
+      } catch (error) {
+        console.error("Error accessing camera:", error);
+      }
+    }
+
+    // Start capturing gyroscope (device orientation) data
+    function startGyro() {
+      function handleOrientation(event) {
+        // event.alpha, event.beta, and event.gamma provide the orientation data
+        document.getElementById("alpha").textContent = event.alpha ? event.alpha.toFixed(2) : "N/A";
+        document.getElementById("beta").textContent = event.beta ? event.beta.toFixed(2) : "N/A";
+        document.getElementById("gamma").textContent = event.gamma ? event.gamma.toFixed(2) : "N/A";
+      }
+
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener("deviceorientation", handleOrientation);
+      } else {
+        console.error("Device Orientation API not supported on this device.");
+      }
+    }
+
+    // Request permission for device orientation events (necessary on iOS 13+)
+    function requestGyroPermission() {
+      // Check if the API requires explicit permission (iOS 13+)
+      if (typeof DeviceOrientationEvent !== 'undefined' &&
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            if (response === "granted") {
+              startGyro();
+            } else {
+              alert("Permission not granted for device orientation data.");
+            }
+          })
+          .catch(error => {
+            console.error("Error requesting device orientation permission:", error);
+          });
+      } else {
+        // If not iOS 13+ (or permission not required), just start capturing data
+        startGyro();
+      }
+    }
+
+    // Start the video stream as soon as the page loads
+    window.addEventListener("load", startVideo);
+
+    // Bind the button to request gyroscope permission and start capturing data
+    document.getElementById("enableGyro").addEventListener("click", requestGyroPermission);
+  </script>
+</body>
+</html>
