@@ -1,237 +1,80 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Record Video, Gyro Data & Upload as ZIP</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Load Azure Storage Blob SDK -->
-  <script defer src="https://cdn.jsdelivr.net/npm/@azure/storage-blob@latest/dist/browser/azure-storage-blob.min.js"></script>
-  <!-- Load JSZip Library -->
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    video { border: 1px solid #000; width: 320px; height: 240px; }
-    button { font-size: 16px; padding: 10px 20px; margin: 5px; }
-    #status { margin-top: 20px; }
-  </style>
+<meta charset="utf‑8">
+<title>LiDAR Depth Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;overflow:hidden}canvas{display:block;width:100%;height:100%}</style>
 </head>
 <body>
-  <h1>Record Video, Gyro Data & Upload as ZIP</h1>
-  
-  <!-- Video Preview -->
-  <video id="video" autoplay playsinline></video>
-  
-  <!-- Controls -->
-  <div>
-    <button id="enableGyro">Enable Gyro (iOS)</button>
-    <button id="startRecording">Start Recording</button>
-    <button id="stopRecording" disabled>Stop Recording</button>
-  </div>
-  
-  <!-- Status Display -->
-  <div id="status"></div>
-  
-  <!-- Inline Script -->
-  <script>
-    // Wait until the DOM is ready.
-    window.addEventListener("DOMContentLoaded", function() {
-      
-      // A helper function that waits until azblob is defined.
-      function waitForAzblob(callback) {
-        if (typeof azblob !== "undefined") {
-          callback();
-        } else {
-          setTimeout(function() {
-            waitForAzblob(callback);
-          }, 50);
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165/build/three.module.js';
+
+(async () => {
+  if (!navigator.xr) {
+    alert('WebXR not available – update to iOS 18+ or use a supported browser.');
+    return;
+  }
+
+  /* 1. Request an immersive‑AR session with depth‑sensing */
+  const session = await navigator.xr.requestSession('immersive-ar', {
+    requiredFeatures: ['depth-sensing'],
+    optionalFeatures: ['hit-test','dom-overlay'],
+    depthSensing: {
+      usagePreference: ['cpu-optimized','gpu-optimized'],
+      dataFormatPreference: ['luminance-alpha','float32']
+    }
+  });
+
+  /* 2. Basic three.js renderer bound to the XR session */
+  const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.xr.enabled = true;
+  document.body.appendChild(renderer.domElement);
+  await renderer.xr.setSession(session);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera();
+
+  /* Point‑cloud geometry that we’ll recycle every frame */
+  const MAX_PTS = 60_000;          // keep it small for 60 fps
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_PTS*3), 3));
+  const mat  = new THREE.PointsMaterial({size:0.01});
+  const cloud = new THREE.Points(geom,mat);
+  scene.add(cloud);
+
+  renderer.setAnimationLoop((time, frame) => {
+    if (frame) {
+      const viewerPose = frame.getViewerPose(renderer.xr.getReferenceSpace());
+      const view = viewerPose.views[0];
+
+      /* 3. Fetch depth buffer for the current view */
+      const depth = frame.getDepthInformation(view);
+      if (depth) {
+        const {data, width, height, rawValueToMeters} = depth;
+        /* Turn every Nth pixel into a vertex */
+        let i = 0, j = 0, step = 4;
+        const pos = geom.attributes.position.array;
+        for (let y = 0; y < height && j < MAX_PTS; y += step) {
+          for (let x = 0; x < width && j < MAX_PTS; x += step) {
+            const idx = (y * width + x) * 2;        // LA format
+            const zMeters = data[idx] * rawValueToMeters;
+            /* Re‑project to view space */
+            const xn = (x / width) * 2 - 1;
+            const yn = (y / height) * 2 - 1;
+            pos[i++] = xn * zMeters;
+            pos[i++] = -yn * zMeters;
+            pos[i++] = -zMeters;
+            j++;
+          }
         }
+        geom.setDrawRange(0, j);
+        geom.attributes.position.needsUpdate = true;
       }
-      
-      // Now wait for the Azure library and then run our code.
-      waitForAzblob(function() {
-        
-        // ===========================================
-        // Global Variables
-        // ===========================================
-        let videoStream;
-        let mediaRecorder;
-        let recordedChunks = [];
-        let isRecording = false;
-        let gyroData = []; // Array to hold CSV rows of gyro data
-  
-        // ===========================================
-        // UI Utility
-        // ===========================================
-        function updateStatus(msg) {
-          document.getElementById("status").textContent = msg;
-          console.log(msg);
-        }
-  
-        // ===========================================
-        // Gyroscope Data Capture
-        // ===========================================
-        function enableGyro() {
-          // For iOS, request explicit permission.
-          if (typeof DeviceOrientationEvent !== 'undefined' &&
-              typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-              .then(response => {
-                if (response === 'granted') {
-                  window.addEventListener('deviceorientation', recordGyro);
-                  updateStatus("Gyro enabled (permission granted).");
-                } else {
-                  updateStatus("Gyro permission not granted.");
-                }
-              })
-              .catch(err => {
-                console.error("Gyro permission error:", err);
-                updateStatus("Gyro permission error: " + err.message);
-              });
-          } else {
-            window.addEventListener('deviceorientation', recordGyro);
-            updateStatus("Gyro enabled (no explicit permission needed).");
-          }
-        }
-  
-        function recordGyro(event) {
-          if (isRecording) {
-            const timestamp = new Date().toISOString();
-            const alpha = event.alpha !== null ? event.alpha.toFixed(2) : "N/A";
-            const beta  = event.beta  !== null ? event.beta.toFixed(2)  : "N/A";
-            const gamma = event.gamma !== null ? event.gamma.toFixed(2) : "N/A";
-            gyroData.push(`${timestamp},${alpha},${beta},${gamma}`);
-          }
-        }
-  
-        // ===========================================
-        // Video Initialization & Recording
-        // ===========================================
-        async function initVideo() {
-          try {
-            videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            document.getElementById("video").srcObject = videoStream;
-          } catch (err) {
-            updateStatus("Error accessing media devices: " + err.message);
-          }
-        }
-  
-        function startRecording() {
-          if (!videoStream) {
-            updateStatus("No video stream available.");
-            return;
-          }
-          // Reset data arrays and add header for CSV.
-          recordedChunks = [];
-          gyroData = ["timestamp,alpha,beta,gamma"];
-  
-          try {
-            mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm' });
-          } catch (e) {
-            updateStatus("MediaRecorder error: " + e.message);
-            return;
-          }
-  
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) {
-              recordedChunks.push(e.data);
-            }
-          };
-  
-          mediaRecorder.onstart = () => {
-            isRecording = true;
-            updateStatus("Recording started...");
-            document.getElementById("startRecording").disabled = true;
-            document.getElementById("stopRecording").disabled = false;
-          };
-  
-          mediaRecorder.onstop = () => {
-            isRecording = false;
-            updateStatus("Recording stopped. Processing data...");
-            createAndUploadZip();
-            document.getElementById("startRecording").disabled = false;
-            document.getElementById("stopRecording").disabled = true;
-          };
-  
-          mediaRecorder.start();
-        }
-  
-        function stopRecording() {
-          if (mediaRecorder && mediaRecorder.state !== "inactive") {
-            mediaRecorder.stop();
-          }
-        }
-  
-        // ===========================================
-        // Create ZIP file and Upload to Azure Blob Storage
-        // ===========================================
-        async function createAndUploadZip() {
-          // Create a Blob from the recorded video chunks.
-          const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
-  
-          // Create a ZIP archive.
-          const zip = new JSZip();
-          zip.file("video.webm", videoBlob);
-          const gyroCSV = gyroData.join("\n");
-          zip.file("gyro.csv", gyroCSV);
-  
-          updateStatus("Zipping files...");
-          try {
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            updateStatus("ZIP file created. Uploading to Azure...");
-            uploadZipToAzure(zipBlob);
-          } catch (err) {
-            console.error("ZIP creation error:", err);
-            updateStatus("Error creating ZIP: " + err.message);
-          }
-        }
-  
-        // ===========================================
-        // Azure Blob Storage Upload Using SAS Token
-        // ===========================================
-        // Your SAS URL (container-scoped, targeting the "stor" container)
-        const sasUrl = "https://capturedatasor.blob.core.windows.net/stor?sp=w&st=2025-02-11T20:57:46Z&se=2025-02-18T04:57:46Z&skoid=aac2a895-5b24-41fd-b00d-07f6bf22b0d1&sktid=fca7a86c-308d-4875-8485-3654af8f06f9&skt=2025-02-11T20:57:46Z&ske=2025-02-18T04:57:46Z&sks=b&skv=2022-11-02&spr=https&sv=2022-11-02&sr=c&sig=clhADRQXUDxprDeh7iQfLt6mEWtIE0iQp4Z9Q%2BlNNzQ%3D";
-  
-        // Create a ContainerClient from the SAS URL.
-        const containerClient = new azblob.ContainerClient(sasUrl);
-        const blobName = "recording.zip"; // Name for the uploaded blob
-  
-        async function ensureContainerExists() {
-          // When using a container SAS URL, the container should already exist.
-          // Calling createIfNotExists() ensures it exists.
-          try {
-            await containerClient.createIfNotExists();
-            updateStatus("Container is ready.");
-          } catch (err) {
-            console.error("Container error:", err);
-            updateStatus("Container error: " + err.message);
-          }
-        }
-  
-        async function uploadZipToAzure(zipBlob) {
-          try {
-            const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-            await blockBlobClient.uploadData(zipBlob, {
-              blobHTTPHeaders: { blobContentType: "application/zip" }
-            });
-            updateStatus("Upload successful!");
-          } catch (err) {
-            console.error("Upload error:", err);
-            updateStatus("Upload error: " + err.message);
-          }
-        }
-  
-        // ===========================================
-        // Event Listeners
-        // ===========================================
-        document.getElementById("enableGyro").addEventListener("click", enableGyro);
-        document.getElementById("startRecording").addEventListener("click", startRecording);
-        document.getElementById("stopRecording").addEventListener("click", stopRecording);
-  
-        // Initialize the video stream and ensure the container exists.
-        initVideo();
-        ensureContainerExists();
-      });
-    });
-  </script>
+    }
+    renderer.render(scene, camera);
+  });
+})();
+</script>
 </body>
 </html>
