@@ -28,23 +28,26 @@
     </nav>
     <main>
         <section id="incident-flow" class="incident-flow-section">
-            <h2>Eksempel på respons-flow</h2>
-            <div class="incident-flow">
-                <div class="flow-step">Hændelse opdages</div>
-                <div class="flow-arrow">&#8595;</div>
-                <div class="flow-step">Alarmér ansvarlig person</div>
-                <div class="flow-arrow">&#8595;</div>
-                <div class="flow-step">Iværksæt beredskabsplan</div>
-                <div class="flow-branches">
-                    <div class="flow-branch">IT-nedbrud</div>
-                    <div class="flow-branch">Brand/ulykke</div>
+            <button class="expand-btn" onclick="toggleFlow()">Vis respons-flow</button>
+            <div id="flow-content" style="display:none;">
+                <h2>Eksempel på respons-flow</h2>
+                <div class="incident-flow">
+                    <div class="flow-step">Hændelse opdages</div>
+                    <div class="flow-arrow">&#8595;</div>
+                    <div class="flow-step">Alarmér ansvarlig person</div>
+                    <div class="flow-arrow">&#8595;</div>
+                    <div class="flow-step">Iværksæt beredskabsplan</div>
+                    <div class="flow-branches">
+                        <div class="flow-branch">IT-nedbrud</div>
+                        <div class="flow-branch">Brand/ulykke</div>
+                    </div>
+                    <div class="flow-arrow">&#8595;</div>
+                    <div class="flow-step">Kommunikation til medarbejdere</div>
+                    <div class="flow-arrow">&#8595;</div>
+                    <div class="flow-step">Genopretning og evaluering</div>
                 </div>
-                <div class="flow-arrow">&#8595;</div>
-                <div class="flow-step">Kommunikation til medarbejdere</div>
-                <div class="flow-arrow">&#8595;</div>
-                <div class="flow-step">Genopretning og evaluering</div>
+                <p class="flow-desc">Dette flow er en central del af analysen og hjælper med at planlægge en effektiv respons på hændelser.</p>
             </div>
-            <p class="flow-desc">Dette flow er en central del af analysen og hjælper med at planlægge en effektiv respons på hændelser.</p>
         </section>
         <section id="packages">
             <h2>Pakker</h2>
@@ -155,6 +158,19 @@
                     }
                 });
             });
+        </script>
+        <script>
+        function toggleFlow() {
+            var flow = document.getElementById('flow-content');
+            var btn = document.querySelector('.expand-btn');
+            if (flow.style.display === 'none') {
+                flow.style.display = 'block';
+                btn.textContent = 'Skjul respons-flow';
+            } else {
+                flow.style.display = 'none';
+                btn.textContent = 'Vis respons-flow';
+            }
+        }
         </script>
         <script src="assets/script.js"></script>
 </body>

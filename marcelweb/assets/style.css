@@ -80,9 +80,14 @@ header {
     margin-bottom: 1rem;
     object-fit: cover;
     box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 10;
+    background: #fff;
 }
 .cta-buttons {
     margin: 1.5rem 0;
+    position: relative;
+    z-index: 10;
 }
 .btn {
     background: #ffd700;
@@ -199,6 +204,21 @@ header {
     z-index: 1;
     border-bottom: 6px solid #ffd700;
 }
+.expand-btn {
+    background: #ffd700;
+    color: #1a237e;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: background 0.2s;
+}
+.expand-btn:hover {
+    background: #fffde7;
+}
 .profile {
     border-top: 4px solid #ffd700;
 }
@@ -210,8 +230,8 @@ header {
     position: relative;
     z-index: 2;
 }
-}
 .visit-form input, .visit-form button {
+ .visit-form input, .visit-form button {
     padding: 0.6rem;
     border-radius: 4px;
     border: 1px solid #bbb;
