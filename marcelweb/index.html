@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beredskabsplan Analyse for Principalities</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <header>
+        <div class="hero">
+            <img src="assets/marcel.jpg" alt="Marcel Pinnerup" class="profile">
+            <h1>Beredskabsplan Analyse</h1>
+            <p>Styrk jeres beredskab med en grundig analyse ledet af Marcel Pinnerup</p>
+            <div class="cta-buttons">
+                <a href="#book-call" class="btn">Book et opkald</a>
+                <a href="#plan-visit" class="btn">Planlæg et besøg</a>
+            </div>
+        </div>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="#packages">Pakker</a></li>
+            <li><a href="#questions">Eksempelspørgsmål</a></li>
+            <li><a href="#sample-report">Eksempelrapport</a></li>
+            <li><a href="#references">Referencer</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section id="incident-flow" class="incident-flow-section">
+            <h2>Eksempel på respons-flow</h2>
+            <div class="incident-flow">
+                <div class="flow-step">Hændelse opdages</div>
+                <div class="flow-arrow">&#8595;</div>
+                <div class="flow-step">Alarmér ansvarlig person</div>
+                <div class="flow-arrow">&#8595;</div>
+                <div class="flow-step">Iværksæt beredskabsplan</div>
+                <div class="flow-branches">
+                    <div class="flow-branch">IT-nedbrud</div>
+                    <div class="flow-branch">Brand/ulykke</div>
+                </div>
+                <div class="flow-arrow">&#8595;</div>
+                <div class="flow-step">Kommunikation til medarbejdere</div>
+                <div class="flow-arrow">&#8595;</div>
+                <div class="flow-step">Genopretning og evaluering</div>
+            </div>
+            <p class="flow-desc">Dette flow er en central del af analysen og hjælper med at planlægge en effektiv respons på hændelser.</p>
+        </section>
+        <section id="packages">
+            <h2>Pakker</h2>
+            <div class="packages">
+                <div class="package">
+                    <h3>Basis</h3>
+                    <div class="price">DKK 19.500</div>
+                    <ul>
+                        <li>Indledende interview</li>
+                        <li>Gennemgang af eksisterende planer</li>
+                        <li>Opsummerende rapport</li>
+                    </ul>
+                </div>
+                <div class="package">
+                    <h3>Udvidet</h3>
+                    <div class="price">DKK 34.500</div>
+                    <ul>
+                        <li>Flere interviews med nøglepersoner</li>
+                        <li>Detaljeret analyse af beredskabsplaner</li>
+                        <li>Handlingsplan og opfølgning</li>
+                    </ul>
+                </div>
+                <div class="package">
+                    <h3>Premium</h3>
+                    <div class="price">Kontakt for pris</div>
+                    <ul>
+                        <li>Alle ydelser fra Udvidet</li>
+                        <li>Workshops og træning</li>
+                        <li>Løbende rådgivning</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="questions">
+            <h2>Eksempel på interviewspørgsmål</h2>
+            <ul>
+                <li>Hvordan er jeres nuværende beredskabsplan struktureret?</li>
+                <li>Hvilke udfordringer har I oplevet under tidligere hændelser?</li>
+                <li>Hvordan sikrer I løbende opdatering af planen?</li>
+                <li>Hvilke roller og ansvar er defineret?</li>
+                <li>Hvordan trænes medarbejdere i beredskabsplanen?</li>
+            </ul>
+        </section>
+        <section id="sample-report">
+            <h2>Eksempelrapport</h2>
+            <p>Se et visuelt uddrag af en rapport, som en kommune modtager efter analysen:</p>
+            <div class="spider-container">
+                <canvas id="spiderChart" width="400" height="400" aria-label="Spider diagram" role="img"></canvas>
+            </div>
+            <a href="assets/sample-report.pdf" class="btn" target="_blank">Download eksempelrapport (PDF)</a>
+        </section>
+        <section id="references">
+            <h2>Referencer</h2>
+            <p>Følgende kommuner har allerede modtaget en analyse:</p>
+            <ul class="references-list">
+                <li>Kommune A</li>
+                <li>Kommune B</li>
+                <li>Kommune C</li>
+            </ul>
+        </section>
+        <section id="book-call">
+            <h2>Book et opkald</h2>
+            <p>Book et uforpligtende opkald med Marcel Pinnerup for at høre mere.</p>
+            <a href="https://calendly.com/" class="btn" target="_blank">Book via Calendly</a>
+        </section>
+        <section id="plan-visit">
+            <h2>Planlæg et besøg</h2>
+            <form class="visit-form">
+                <label for="name">Navn:</label>
+                <input type="text" id="name" name="name" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+                <label for="kommune">Kommune:</label>
+                <input type="text" id="kommune" name="kommune" required>
+                <button type="submit" class="btn">Send forespørgsel</button>
+            </form>
+        </section>
+    </main>
+    <footer>
+                <p>&copy; 2025 Marcel Pinnerup. Alle rettigheder forbeholdes.</p>
+        </footer>
+        <script src="assets/chart.min.js"></script>
+        <script>
+        // Spider diagram rendering
+        fetch('assets/spiderdata.json')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('spiderChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: data.labels,
+                        datasets: data.datasets
+                    },
+                    options: {
+                        responsive: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'Krisestyringsvurdering' }
+                        },
+                        scales: {
+                            r: {
+                                min: 0,
+                                max: 5,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+        <script src="assets/script.js"></script>
+</body>
+</html>
