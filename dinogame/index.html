@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dino Game</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <main class="page">
+        <h1 class="title">Chrome-style Dino Game</h1>
+        <p class="hint">Press <strong>Space</strong> or <strong>Arrow Up</strong> to jump. Press <strong>R</strong> to restart.</p>
+
+        <div id="game" class="game">
+            <div id="ground" class="ground"></div>
+            <div id="dino" class="dino"></div>
+            <div id="score" class="score">SCORE 0</div>
+            <div id="highscore" class="highscore">HI 0</div>
+            <div id="game-over" class="game-over hidden">
+                <div>GAME OVER</div>
+                <div class="small">Press R to restart</div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
