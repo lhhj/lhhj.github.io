@@ -93,7 +93,7 @@ body {
     right: 12px;
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 1rem;
-    color: #ff1744;
+    color: #f1f1f1;
     text-shadow: 0 0 4px rgba(0,0,0,0.6);
     z-index: 5;
 }

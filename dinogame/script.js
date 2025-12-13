@@ -193,7 +193,11 @@ function handleJump() {
 document.addEventListener('keydown', (e) => {
     if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault();
-        handleJump();
+        if (isGameOver) {
+            resetGame();
+        } else {
+            handleJump();
+        }
     }
     if (e.code === 'KeyR') {
         resetGame();
