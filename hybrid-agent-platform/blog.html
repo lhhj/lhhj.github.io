@@ -74,7 +74,7 @@ footer{margin-top:3em;font:400 .85rem var(--sans);color:var(--muted);border-top:
 <main>
 <div class="kicker">Blog · November 2026</div>
 <h1>Frontier models where allowed, our own GPUs where required</h1>
-<p class="byline"><b>Leif Howalt Elgaard Høj</b> · Danoffice IT · <a href="paper.html">Technical report</a> · <a href="https://github.com/lhhj/hybrid-agent-hub">Code</a></p>
+<p class="byline"><b>Leif Howalt Elgaard Høj</b> · Danoffice IT · <a href="paper.html">Technical report</a></p>
 
 <p class="lede">Most conversations I have with customers about AI agents end up at the same question: can we use the best models without sending our most sensitive data to someone else's cloud? Usually the answer offered is a choice. Pick the cloud and get the best models, or pick your own hardware and keep the data. I wanted to see whether a single platform could make that choice per conversation instead.</p>
 
@@ -92,15 +92,14 @@ footer{margin-top:3em;font:400 .85rem var(--sans);color:var(--muted);border-top:
 <p>Rules alone caught 50% of the confidential prompts. Every one they missed was a prompt with no keyword to match, such as a warning letter about someone's absence or a question about who is on sick leave. With a 3-billion-parameter model added on-premises, the router caught 62%, and overall accuracy rose from 58% to 69%. The model answered in a median of 0.4 seconds on my workstation.</p><p>62% is not good enough to be the only safeguard, and I want to be clear about that. But the misses were interesting: the small model rated none of the confidential prompts as public. The ones it missed, it rated internal. So if an organisation lets only public work go to the cloud, none of the confidential prompts in the set would have left the building. The price is that internal work stays on local models too. That is a policy choice the platform makes explicit, rather than a hope about model accuracy. The classification a user or a data source sets stays the primary control; the router can only add caution.</p>
 <p>The set is small and I wrote it myself, so treat the numbers as a first measurement rather than a benchmark. The <a href="paper.html">technical report</a> has the details, the confusion matrices and the limitations.</p>
 
-<h2>Try it</h2>
-<p>The code is open source. On a Windows PC with Docker Desktop it starts in three steps: start Docker, double-click <code>start-local.cmd</code>, and double-click <code>connect-harness.cmd</code> to connect Claude Code, Claude Desktop or Cursor. <code>run-eval.cmd</code> reruns the evaluation on your own machine, and the prompt set is a plain file you can extend with your own examples.</p>
+<h2>How it runs</h2>
+<p>The reference build runs on a single Windows PC with Docker Desktop: the gateway, the router, an on-premises agent and a local model start together, and Claude Code, Claude Desktop or Cursor can connect to it as tools. The same build scales out to agents beside real systems and a frontier-class model on the organisation's own GPU servers. The code is not public yet; if you would like a demo, get in touch.</p>
 
 <h2>What's next</h2>
 <p>The obvious next step is a pilot with real data owners: a few hundred real prompts labelled by the people responsible for the data, agents beside a real document system, and the token savings measured rather than modelled. If your organisation has data that cannot leave the building but would benefit from frontier models elsewhere, I would like to hear from you.</p>
 
 <div class="cards">
 <a href="paper.html"><b>Technical report</b><span>Architecture, router design, evaluation and limitations.</span></a>
-<a href="https://github.com/lhhj/hybrid-agent-hub"><b>Code and data</b><span>Reference implementation, 40 tests and the evaluation set.</span></a>
 <a href="deck.html"><b>Slide deck</b><span>The platform in 13 slides, with sizing and a rollout plan.</span></a>
 <a href="field-guide.html"><b>RTX Spark field guide</b><span>Long-form article on local and frontier AI on Spark hardware.</span></a>
 </div>
