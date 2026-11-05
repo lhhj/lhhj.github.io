@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hybrid Agent Platform</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a stack of 16:9 engineering slides in Danoffice IT colours; navy title band, schematic diagrams on a faint grid.
+   Navy = request/job, teal = result/allowed, grey = local data, amber = boundaries and policy. Arrow keys step slides. */
+:root{
+  --bg:#e9eef0; --slide:#ffffff; --ink:#141414; --muted:#5a6770; --line:#d5dee2; --grid:#eef2f4;
+  --navy:#1b3149; --teal:#279eb6; --teal-ink:#1a7b8f; --data:#8a979f; --warn:#b07400;
+  --band:#1b3149; --band-ink:#ffffff; --band-muted:#b9c8d6;
+  --f-display:"Barlow","Helvetica Neue",Arial,sans-serif;
+  --f-text:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1113; --slide:#1c1f22; --ink:#eef2f4; --muted:#9ba7ae; --line:#31383d; --grid:#22272a;
+  --navy:#8fb3d9; --teal:#3bb8d0; --teal-ink:#5cc8dc; --data:#6f7c84; --warn:#e2a93b;
+  --band:#1b3149; --band-ink:#ffffff; --band-muted:#b9c8d6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1113; --slide:#1c1f22; --ink:#eef2f4; --muted:#9ba7ae; --line:#31383d; --grid:#22272a;
+  --navy:#8fb3d9; --teal:#3bb8d0; --teal-ink:#5cc8dc; --data:#6f7c84; --warn:#e2a93b;
+  --band:#1b3149; --band-ink:#ffffff; --band-muted:#b9c8d6; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-text);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.deck{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.slide{position:relative;aspect-ratio:16/9;background:var(--slide);border:1px solid var(--line);border-radius:4px;container-type:inline-size;
+  display:flex;flex-direction:column;padding:4.2cqw 5cqw 3.6cqw;gap:2.2cqw;scroll-margin-top:16px;overflow:hidden}
+.slide:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.slide.band{background:var(--band);color:var(--band-ink);border-color:var(--band)}
+.foot{position:absolute;left:5cqw;right:5cqw;bottom:1.8cqw;display:flex;justify-content:space-between;font:400 max(10px,1.05cqw) var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.band .foot{color:var(--band-muted)}
+.eyebrow{font:500 max(11px,1.2cqw) var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--teal-ink)}
+.band .eyebrow{color:#7fd3e4}
+h1,h2{font-family:var(--f-display);font-weight:500;text-transform:uppercase;letter-spacing:.02em;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:max(26px,5.2cqw)}
+h2{font-size:max(20px,3.3cqw)}
+p,li{font-size:max(14px,1.75cqw);line-height:1.5;margin:0}
+.lede{font-size:max(15px,2.1cqw);max-width:58ch;color:var(--band-muted)}
+.muted{color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:2.4cqw;flex:1;min-height:0}
+.cell{display:flex;flex-direction:column;gap:.9cqw;border-top:2px solid var(--ink);padding-top:1.2cqw;min-width:0}
+.cell.teal{border-top-color:var(--teal)} .cell.amber{border-top-color:var(--warn)} .cell.grey{border-top-color:var(--data)}
+.cell h3{font:600 max(14px,2.2cqw) var(--f-display);text-transform:uppercase;letter-spacing:.03em;margin:0}
+.cell p{font-size:max(13px,1.95cqw);line-height:1.45;color:var(--muted)}
+.big{font:600 max(22px,4.2cqw) var(--f-display);font-variant-numeric:tabular-nums;line-height:1}
+ol.flow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1.6cqw;counter-reset:s}
+ol.flow li{counter-increment:s;border-top:2px solid var(--navy);padding-top:1cqw;display:flex;flex-direction:column;gap:.6cqw;font-size:max(13px,1.55cqw);color:var(--muted)}
+ol.flow li b{color:var(--ink);font:600 max(14px,1.8cqw) var(--f-display);text-transform:uppercase;letter-spacing:.03em}
+ol.flow li::before{content:counter(s);font:500 max(12px,1.4cqw) var(--f-mono);color:var(--teal-ink)}
+.svgwrap{flex:1;min-height:0;overflow-x:auto}
+.svgwrap svg{display:block;width:100%;height:100%;min-width:560px}
+svg text{font-family:var(--f-mono);fill:var(--ink)}
+svg .lbl{font-size:10px;letter-spacing:.06em;fill:var(--muted)}
+svg .ttl{font-size:12px;font-weight:500}
+svg .blk{fill:var(--slide);stroke:var(--ink);stroke-width:1.25}
+svg .wire{fill:none;stroke:var(--ink);stroke-width:1.25}
+svg .gridl{stroke:var(--grid);stroke-width:1}
+.tbl{overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:max(12px,1.45cqw);line-height:1.4}
+th,td{text-align:left;padding:.75cqw 1cqw;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 max(10px,1.1cqw) var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td b{font-weight:500}
+.dots{letter-spacing:.12em;white-space:nowrap}
+.r3{color:var(--teal-ink)} .r2{color:var(--navy)} .r1{color:var(--data)}
+.pill{display:inline-block;font:500 max(10px,1.05cqw) var(--f-mono);letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:3px;padding:0 .5em}
+.pill.done{color:var(--teal-ink)} .pill.next{color:var(--warn)} .pill.std{color:var(--muted)}
+.phases{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.6cqw;flex:1;min-height:0}
+.phase{display:flex;flex-direction:column;gap:.8cqw;min-width:0}
+.phase .bar{height:.6cqw;min-height:5px;background:var(--line);border-radius:1px}
+.phase.now .bar{background:var(--teal)}
+.phase h3{font:600 max(14px,1.8cqw) var(--f-display);text-transform:uppercase;letter-spacing:.03em;margin:0}
+.phase ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:.4cqw}
+.phase li{font-size:max(12px,1.75cqw);color:var(--muted)}
+.phase .exit{font:400 max(11px,1.25cqw) var(--f-mono);color:var(--ink);border-top:1px solid var(--line);padding-top:.6cqw;margin-top:auto}
+.nav{position:fixed;right:max(16px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:6px}
+.nav button{font:500 12px var(--f-mono);background:var(--teal);color:#fff;border:0;border-radius:100px;padding:8px 14px;cursor:pointer}
+.nav button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+@media (max-width:700px){
+  .slide{aspect-ratio:auto;padding:24px 18px 44px;gap:14px}
+  .cols,.phases{grid-template-columns:1fr}
+  ol.flow{grid-template-columns:1fr 1fr}
+  .svgwrap svg{height:auto}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+html{scroll-behavior:smooth}
+table.size td{font-size:max(12px,1.35cqw)} td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tight{gap:1.4cqw}.tight .tbl{flex-shrink:0}.tight .cell p{font-size:max(12px,1.5cqw)}.tight .big{font-size:max(20px,3.4cqw)}.tight td,.tight th{padding:.45cqw 1cqw}.tight table{font-size:max(11px,1.3cqw)}
+</style>
+
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- 1 -->
+<section class="slide band" tabindex="-1" aria-label="Slide 1">
+  <div class="eyebrow">Danoffice IT · AI &amp; automation · target architecture</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:2.4cqw">
+    <h1>A hybrid agent platform: frontier models where allowed, our own GPUs where required</h1>
+    <p class="lede">One gateway that classifies every conversation, sends it only to models the data rules allow, and lets agents work beside the data on a shared, Kubernetes-managed GPU tier.</p>
+  </div>
+  <div class="foot"><span>Hybrid agent platform</span><span>01 / 13</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide" tabindex="-1" aria-label="Slide 2">
+  <div class="eyebrow">The problem</div>
+  <h2>Our data has three sensitivities. Most platforms serve one.</h2>
+  <div class="cols">
+    <div class="cell teal"><h3>Public</h3><p>Market research, product news, public documentation. Any model may see it, and the best cloud models give the best results.</p></div>
+    <div class="cell"><h3>Internal</h3><p>Contracts, customer lists, budgets, system status. May use approved cloud models, but must not reach public web agents.</p></div>
+    <div class="cell amber"><h3>Confidential</h3><p>HR cases, pay, health, personal ID numbers, client-privileged material. Must stay on our own models and hardware.</p></div>
+  </div>
+  <p class="muted">Cloud assistants cover the first column well; private platforms cover the third. The target design is one platform that routes each conversation to the right column, in code, with a log.</p>
+  <div class="foot"><span>Hybrid agent platform</span><span>02 / 13</span></div>
+</section>
+
+<!-- 3 -->
+<section class="slide" tabindex="-1" aria-label="Slide 3">
+  <div class="eyebrow">Target architecture · Fig. 8</div>
+  <h2>What we would build</h2>
+  <div class="svgwrap">
+  <svg viewBox="0 0 760 360" role="img" aria-label="Architecture: a local router and the AI gateway above a Kubernetes cluster. Agent pods in OpenShell sandboxes dial out to the gateway and read data systems in place. NeMo Guardrails sit in front of worker models. A frontier model runs with Dynamo and Grove. A platform layer of scheduler, GPU Operator and observability runs on H200 or B200 and DGX Spark nodes. Optional cloud models and Hugging Face Spaces sit outside, for public work only.">
+    <defs><pattern id="gA" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" class="gridl"/></pattern></defs>
+    <rect width="760" height="360" fill="url(#gA)"/>
+    <rect x="560" y="8" width="190" height="42" class="blk" style="stroke-dasharray:4 3"/>
+    <text x="655" y="26" text-anchor="middle" class="ttl">CLOUD · HF SPACES</text>
+    <text x="655" y="41" text-anchor="middle" class="lbl">optional · public only</text>
+    <line x1="0" y1="62" x2="760" y2="62" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="14 4 2 4"/>
+    <path d="M655 50V76" class="wire" style="stroke:var(--warn)" stroke-dasharray="3 3"/>
+    <rect x="40" y="74" width="170" height="44" class="blk" style="stroke:var(--warn)"/>
+    <text x="125" y="93" text-anchor="middle" class="ttl">LOCAL ROUTER</text>
+    <text x="125" y="108" text-anchor="middle" class="lbl">small model · raise-only</text>
+    <path d="M210 96H250" class="wire"/>
+    <rect x="565" y="76" width="150" height="40" class="blk" style="stroke:var(--teal)"/>
+    <text x="640" y="93" text-anchor="middle" class="ttl">SWITCHYARD</text>
+    <text x="640" y="107" text-anchor="middle" class="lbl">model per route</text>
+    <path d="M520 96H565" class="wire"/><path d="M715 96H748V266H730" class="wire"/>
+    <rect x="250" y="74" width="270" height="44" class="blk" style="stroke:var(--teal);stroke-width:2"/>
+    <text x="385" y="93" text-anchor="middle" class="ttl">HUB · AI GATEWAY</text>
+    <text x="385" y="108" text-anchor="middle" class="lbl">policy · audit · MCP</text>
+    <rect x="16" y="130" width="728" height="222" fill="none" stroke="var(--ink)" stroke-dasharray="10 3"/>
+    <text x="26" y="146" class="lbl">KUBERNETES</text>
+    <path d="M385 118V136H190V156M385 136H560V156M370 136V156" class="wire" stroke-dasharray="6 3"/>
+    <rect x="30" y="156" width="110" height="52" class="blk" style="stroke-dasharray:2 3"/>
+    <text x="85" y="179" text-anchor="middle" class="ttl">DATA</text><text x="85" y="194" text-anchor="middle" class="lbl">ERP · DMS</text>
+    <path d="M140 182H158" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+    <rect x="158" y="152" width="130" height="60" fill="none" stroke="var(--warn)" stroke-dasharray="3 3"/>
+    <rect x="164" y="158" width="118" height="36" class="blk"/><text x="223" y="180" text-anchor="middle" class="ttl">AGENT POD</text>
+    <text x="223" y="207" text-anchor="middle" class="lbl" style="fill:var(--warn)">sandbox</text>
+    <rect x="305" y="152" width="130" height="60" fill="none" stroke="var(--warn)" stroke-dasharray="3 3"/>
+    <rect x="311" y="158" width="118" height="36" class="blk"/><text x="370" y="180" text-anchor="middle" class="ttl">AGENT POD</text>
+    <text x="370" y="207" text-anchor="middle" class="lbl" style="fill:var(--warn)">sandbox</text>
+    <rect x="495" y="152" width="130" height="60" fill="none" stroke="var(--warn)" stroke-dasharray="3 3"/>
+    <rect x="501" y="158" width="118" height="36" class="blk"/><text x="560" y="180" text-anchor="middle" class="ttl">MODEL RELAY</text>
+    <text x="560" y="207" text-anchor="middle" class="lbl" style="fill:var(--warn)">sandbox</text>
+    <path d="M223 212V226M370 212V226" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+    <rect x="158" y="226" width="277" height="24" class="blk" style="stroke:var(--warn)"/>
+    <text x="296" y="242" text-anchor="middle" class="ttl">GUARDRAILS</text>
+    <path d="M296 250V262" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+    <rect x="158" y="262" width="277" height="34" class="blk"/><text x="296" y="283" text-anchor="middle" class="ttl">WORKER MODELS · 20–120B</text>
+    <rect x="455" y="236" width="275" height="60" class="blk"/><rect x="459" y="240" width="267" height="52" fill="none" stroke="var(--ink)" stroke-width=".6"/>
+    <text x="592" y="260" text-anchor="middle" class="ttl">FRONTIER MODEL</text>
+    <text x="592" y="276" text-anchor="middle" class="lbl">Kimi / GLM · Dynamo + Grove</text>
+    <path d="M560 212V236" class="wire"/>
+    <rect x="30" y="306" width="700" height="36" class="blk" style="stroke-width:2"/>
+    <text x="380" y="328" text-anchor="middle" class="ttl">SCHEDULER · GPU OPERATOR · OBSERVABILITY · H200/B200 + DGX SPARK NODES</text>
+  </svg>
+  </div>
+  <div class="foot"><span>Hybrid agent platform</span><span>03 / 13</span></div>
+</section>
+
+<!-- 4 -->
+<section class="slide" tabindex="-1" aria-label="Slide 4">
+  <div class="eyebrow">One request, end to end</div>
+  <h2>How a conversation moves through the platform</h2>
+  <ol class="flow">
+    <li><b>Classify</b>Rules, then a small on-prem model, rate the prompt. They can raise the level the user set, never lower it.</li>
+    <li><b>Route</b>The policy picks the Switchyard route for that level; Switchyard picks the model inside it. Confidential routes hold on-prem models only.</li>
+    <li><b>Plan</b>The chosen model sees only permitted tools and decides which agents to call, in parallel where it can.</li>
+    <li><b>Work</b>Each job goes down the agent's own outbound connection. The agent reads data in place with a local model.</li>
+    <li><b>Return</b>Only a schema-checked result goes back up. Every step is logged and shown in the traffic view.</li>
+  </ol>
+  <div class="cols" style="--n:3;flex:0 0 auto">
+    <div class="cell grey"><h3>No inbound ports</h3><p>Agents and the model relay dial out. The cluster exposes nothing.</p></div>
+    <div class="cell grey"><h3>Policy in code</h3><p>Tool calls are re-checked against the allowed list, so a misled model cannot reach a hidden tool.</p></div>
+    <div class="cell grey"><h3>Findings, not files</h3><p>The planning model receives structured results, about 90 tokens per document instead of 4,000.</p></div>
+  </div>
+  <div class="foot"><span>Hybrid agent platform</span><span>04 / 13</span></div>
+</section>
+
+<!-- 5 -->
+<section class="slide" tabindex="-1" aria-label="Slide 5">
+  <div class="eyebrow">The local router</div>
+  <h2>A small model decides where a conversation may go</h2>
+  <div class="cols" style="--n:4">
+    <div class="cell amber"><h3>Rules first</h3><p>Personal ID numbers, pay, HR, health and "confidential" markings raise the level. No model can override them.</p></div>
+    <div class="cell"><h3>Raise only</h3><p>The router model may make a conversation stricter, never looser. A prompt crafted to fool it cannot unlock the cloud.</p></div>
+    <div class="cell"><h3>Fail closed</h3><p>A slow, failed or malformed answer means confidential: the work stays on our own models.</p></div>
+    <div class="cell teal"><h3>Then optimise</h3><p>Simple requests go to a small local model; complex ones to the best frontier model the level allows.</p></div>
+  </div>
+  <p class="muted">Runs on-prem because it reads every raw prompt. Built into the reference hub today with Qwen 2.5 3B in Ollama. Which model answers is then left to NVIDIA NeMo Switchyard, within the route the level allows.</p>
+  <div class="foot"><span>Hybrid agent platform</span><span>05 / 13</span></div>
+</section>
+
+<!-- 5b -->
+<section class="slide tight" tabindex="-1" aria-label="Slide: who decides what">
+  <div class="eyebrow">NVIDIA NeMo Switchyard in the platform</div>
+  <h2>Our router sets the boundary. Switchyard picks the model.</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Decision</th><th>Made by</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td><b>How sensitive is it?</b></td><td>Hub router</td><td>Rules, then a small on-prem model; raise-only, fail closed, logged</td></tr>
+      <tr><td><b>Which models may see it?</b></td><td>Hub policy</td><td>One Switchyard route per level; each route's zone is declared, and confidential routes hold on-prem models only</td></tr>
+      <tr><td><b>Which model answers?</b></td><td>Switchyard</td><td>A local judge estimates whether the cheaper model can solve it; otherwise the strong model answers</td></tr>
+      <tr><td><b>What if a model fails?</b></td><td>Switchyard</td><td>Retries, cooldown, fallback to the other target in the same route</td></tr>
+      <tr><td><b>What did it cost?</b></td><td>Switchyard</td><td>Per-request routing log with model and cost; live counters for benchmarking</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols" style="--n:3;flex:0 0 auto">
+    <div class="cell grey"><h3>Safe by construction</h3><p>A wrong Switchyard judgement can cost money. It cannot move data across the boundary.</p></div>
+    <div class="cell grey"><h3>Harness ready</h3><p>Switchyard speaks the OpenAI and Anthropic APIs, so Claude Code can run on an on-prem route.</p></div>
+    <div class="cell amber"><h3>Pre-alpha</h3><p>v0.3.0, Apache 2.0, "not for production use". Pilot it; don't build commitments on it yet.</p></div>
+  </div>
+  <div class="foot"><span>Hybrid agent platform</span><span>06 / 13</span></div>
+</section>
+
+<!-- 6 -->
+<section class="slide" tabindex="-1" aria-label="Slide 6">
+  <div class="eyebrow">Building blocks</div>
+  <h2>Standard components, with our policy on top</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Layer</th><th>Production component</th><th>Reference build</th></tr></thead>
+    <tbody>
+      <tr><td><b>Gateway</b></td><td>LiteLLM, Envoy AI Gateway or agentgateway</td><td><span class="pill done">built</span> hub with zones and policy</td></tr>
+      <tr><td><b>Routing judgement</b></td><td>NVIDIA NeMo Switchyard (pre-alpha); vLLM Semantic Router</td><td><span class="pill done">built</span> router + Switchyard routes</td></tr>
+      <tr><td><b>Tools and agents</b></td><td>MCP for tools, A2A between agents</td><td><span class="pill done">built</span> MCP; <span class="pill next">next</span> A2A</td></tr>
+      <tr><td><b>Agent sandbox</b></td><td>NVIDIA OpenShell, deny-by-default egress</td><td><span class="pill next">next</span> container only</td></tr>
+      <tr><td><b>Guardrails</b></td><td>NeMo Guardrails NIM: safety, topic, jailbreak</td><td><span class="pill next">next</span> schema gate only</td></tr>
+      <tr><td><b>Model serving</b></td><td>vLLM, NIM; Dynamo + Grove for multi-node</td><td><span class="pill done">built</span> vLLM profile + relay</td></tr>
+      <tr><td><b>GPU sharing</b></td><td>Kubernetes, GPU Operator, KAI Scheduler or Run:ai</td><td><span class="pill std">plan</span> Docker Compose today</td></tr>
+      <tr><td><b>Identity and audit</b></td><td>Entra ID / OIDC, OpenTelemetry, SIEM</td><td><span class="pill std">plan</span> token + JSON audit log</td></tr>
+    </tbody>
+  </table></div>
+  <div class="foot"><span>Hybrid agent platform</span><span>07 / 13</span></div>
+</section>
+
+<!-- 7 -->
+<section class="slide" tabindex="-1" aria-label="Slide 7">
+  <div class="eyebrow">Sizing the GPU tier</div>
+  <h2>The planner is the expensive part</h2>
+  <div class="cols" style="--n:3">
+    <div class="cell"><span class="big">~2 TB</span><h3>Kimi K3-class planner</h3><p>2.8T parameters, 1.56 TB of weights in MXFP4. Two 8-GPU H200 servers; one HGX H200 system is priced at $320–420k.</p></div>
+    <div class="cell"><span class="big">1 node</span><h3>300–700B open models</h3><p>GLM and DeepSeek class fit one 8-GPU H200/B200 server, at some cost in planning quality.</p></div>
+    <div class="cell teal"><span class="big">20–120B</span><h3>Workers</h3><p>Extraction, OCR and embeddings on MIG slices or DGX Spark nodes. This is where most documents are read.</p></div>
+  </div>
+  <p class="muted">A pragmatic start keeps the planner in the cloud for public and internal work, and uses a single-node open model for confidential planning until volumes justify more.</p>
+  <div class="foot"><span>Hybrid agent platform</span><span>08 / 13</span></div>
+</section>
+
+<!-- 7b -->
+<section class="slide" tabindex="-1" aria-label="Slide: sizing tiers">
+  <div class="eyebrow">Server infrastructure · recommended starting points</div>
+  <h2>Three sizes, chosen by who plans confidential work</h2>
+  <div class="tbl"><table class="size">
+    <thead><tr><th>Tier</th><th>Hardware</th><th>Runs on-prem</th><th>Cloud role</th><th>Rate to size for</th></tr></thead>
+    <tbody>
+      <tr><td><b>S · Pilot</b><br><span class="muted">≤ 100 users</span></td><td>2× DGX Spark (128 GB each), or one server with 2× RTX PRO 6000 Blackwell (96 GB each)</td><td>Router (3B), workers 20–35B, embeddings; gpt-oss-120b-class planner for confidential work</td><td>Plans public and internal work</td><td class="n">~0.5k tok/s</td></tr>
+      <tr><td><b>M · Business unit</b><br><span class="muted">≤ 1,000 users</span></td><td>One 8-GPU H200 server (1.1 TB) or B200 (1.4 TB) for the planner, plus a 4-GPU worker node; Kubernetes</td><td>300–700B open planner (GLM, DeepSeek class) for all non-public work; workers on MIG slices</td><td>Public research only</td><td class="n">~5k tok/s</td></tr>
+      <tr><td><b>L · Enterprise</b><br><span class="muted">1,000+ users</span></td><td>Two 8-GPU H200 servers (≈2.2 TB) for a Kimi K3-class planner, two or more worker nodes, shared storage</td><td>Frontier-class planner and all agents; guardrails and sandboxes</td><td>Optional, by policy</td><td class="n">~25k tok/s</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Rate = average tokens per second the on-prem tier must process in an 8-hour working day under the assumptions on the next slide; plan for peaks of 3–5×. Throughput per server depends on model, precision and context length, so benchmark the chosen model before buying. Add 15–25% memory headroom for context (KV cache).</p>
+  <div class="foot"><span>Hybrid agent platform</span><span>09 / 13</span></div>
+</section>
+
+<!-- 7c -->
+<section class="slide tight" tabindex="-1" aria-label="Slide: public tokens replaced">
+  <div class="eyebrow">Public tokens replaced · worked example</div>
+  <h2>How much cloud traffic the platform takes over</h2>
+  <div class="cols" style="--n:3;flex:0 0 auto">
+    <div class="cell teal"><span class="big">93%</span><h3>S · cloud plans</h3><p>100 users: 14.5M → 1.1M cloud input tokens a day. Only findings go to the cloud, and simple tasks stay local.</p></div>
+    <div class="cell teal"><span class="big">98%</span><h3>M · on-prem planner</h3><p>1,000 users: 145M → 2.6M a day. Only public research still goes to a cloud model.</p></div>
+    <div class="cell teal"><span class="big">≈100%</span><h3>L · fully sovereign</h3><p>5,000 users: 723M tokens a day, all served in-house. Cloud use becomes a choice, not a need.</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Assumption</th><th>Value</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>Task</td><td class="n">3 documents × 4,150 tokens + 2,000 prompt</td><td>Cloud-only sends every document: 14,450 input tokens</td></tr>
+      <tr><td>Hybrid task to cloud</td><td class="n">3 × 210 tokens of findings + 2,000</td><td>2,630 input tokens: documents are read on-prem</td></tr>
+      <tr><td>Mix</td><td class="n">20% confidential · 40% simple · 40% complex</td><td>Router keeps confidential and simple work local</td></tr>
+      <tr><td>Volume</td><td class="n">10 tasks per user per day</td><td>Scales linearly with users</td></tr>
+      <tr><td>Price (for scale)</td><td class="n">$3 per million input tokens</td><td>Tier M: ≈$108k a year cloud-only vs ≈$2k hybrid (250 working days, input only)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="foot"><span>Hybrid agent platform</span><span>10 / 13</span></div>
+</section>
+
+<!-- 8 -->
+<section class="slide" tabindex="-1" aria-label="Slide 8">
+  <div class="eyebrow">Evaluation</div>
+  <h2>How it compares with the alternatives</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Criterion</th><th>Cloud assistant</th><th>Hyperscaler agents</th><th>Turnkey private AI</th><th>In-house OSS</th><th>Hybrid design</th></tr></thead>
+    <tbody>
+      <tr><td><b>Data stays in-house</b></td><td class="dots r1" aria-label="weak">●○○</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r3" aria-label="strong">●●●</td></tr>
+      <tr><td><b>Best models</b></td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r1" aria-label="weak">●○○</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r3" aria-label="strong">●●●</td></tr>
+      <tr><td><b>Mixed sensitivity</b></td><td class="dots r1" aria-label="weak">●○○</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r3" aria-label="strong">●●●</td></tr>
+      <tr><td><b>Low operating effort</b></td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r1" aria-label="weak">●○○</td><td class="dots r1" aria-label="weak">●○○</td></tr>
+      <tr><td><b>Freedom to switch</b></td><td class="dots r1" aria-label="weak">●○○</td><td class="dots r1" aria-label="weak">●○○</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r3" aria-label="strong">●●●</td></tr>
+      <tr><td><b>Maturity, support</b></td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r3" aria-label="strong">●●●</td><td class="dots r2" aria-label="partial">●●○</td><td class="dots r1" aria-label="weak">●○○</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Qualitative assessment by solution type, by default configuration. The hybrid design is best read as a way to combine a turnkey private platform with a cloud tier, not as a replacement for either.</p>
+  <div class="foot"><span>Hybrid agent platform</span><span>11 / 13</span></div>
+</section>
+
+<!-- 9 -->
+<section class="slide" tabindex="-1" aria-label="Slide 9">
+  <div class="eyebrow">Rollout</div>
+  <h2>From reference build to shared platform</h2>
+  <div class="phases">
+    <div class="phase now"><div class="bar"></div><h3>1 · Reference</h3><ul><li>One host, Docker Compose</li><li>Router, policy, relay, MCP</li><li>Demo data</li></ul><div class="exit">Exit: runs in three steps; tests green</div></div>
+    <div class="phase"><div class="bar"></div><h3>2 · Pilot</h3><ul><li>Two real use cases</li><li>Agents beside one DMS and one ERP</li><li>Cloud planner for internal work</li></ul><div class="exit">Exit: router accuracy and token savings measured</div></div>
+    <div class="phase"><div class="bar"></div><h3>3 · Sovereign tier</h3><ul><li>Kubernetes, GPU Operator, scheduler</li><li>On-prem planner for confidential work</li><li>OpenShell sandboxes, guardrails</li></ul><div class="exit">Exit: confidential use case live on-prem</div></div>
+    <div class="phase"><div class="bar"></div><h3>4 · Platform</h3><ul><li>SSO, per-team quotas</li><li>SIEM export, high availability</li><li>Agent catalogue for business units</li></ul><div class="exit">Exit: teams onboard without the core team</div></div>
+  </div>
+  <div class="foot"><span>Hybrid agent platform</span><span>12 / 13</span></div>
+</section>
+
+<!-- 10 -->
+<section class="slide band" tabindex="-1" aria-label="Slide 10">
+  <div class="eyebrow">Decision needed</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:2.2cqw">
+    <h2>Approve a pilot with two use cases</h2>
+    <div class="cols" style="--n:3;flex:0 0 auto">
+      <div class="cell teal" style="border-top-color:#7fd3e4"><h3>What we need</h3><p style="color:var(--band-muted)">Two business owners with data that cannot go to the cloud, one GPU server or DGX Spark cluster, and a platform engineer.</p></div>
+      <div class="cell teal" style="border-top-color:#7fd3e4"><h3>What we measure</h3><p style="color:var(--band-muted)">Extraction accuracy against a baseline, router accuracy on labelled prompts, cloud tokens saved, time per task.</p></div>
+      <div class="cell teal" style="border-top-color:#7fd3e4"><h3>What we decide after</h3><p style="color:var(--band-muted)">Whether to build the sovereign tier, and which components to buy as a turnkey platform.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Hybrid agent platform</span><span>13 / 13</span></div>
+</section>
+
+</div>
+
+<nav class="nav" aria-label="Slide navigation">
+  <button type="button" id="prev" aria-label="Previous slide">◀</button>
+  <button type="button" id="next" aria-label="Next slide">▶</button>
+</nav>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  function current(){
+    var best=0,dist=Infinity;
+    slides.forEach(function(s,i){var d=Math.abs(s.getBoundingClientRect().top-16);if(d<dist){dist=d;best=i;}});
+    return best;
+  }
+  function go(i){i=Math.max(0,Math.min(slides.length-1,i));slides[i].scrollIntoView({block:'start'});slides[i].focus({preventScroll:true});}
+  document.getElementById('prev').onclick=function(){go(current()-1);};
+  document.getElementById('next').onclick=function(){go(current()+1);};
+  document.addEventListener('keydown',function(e){
+    if(e.target.closest&&e.target.closest('input,textarea,select'))return;
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(current()+1);}
+    if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(current()-1);}
+  });
+})();
+</script>
+
+</body>
+</html>

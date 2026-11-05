@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sovereignty-Aware Routing for Hybrid Agent Systems</title>
+<meta name="description" content="A reference architecture for hybrid LLM agent systems with a raise-only local router, and an evaluation on 72 labelled English and Danish prompts.">
+<meta name="author" content="Leif Howalt Elgaard Høj">
+<meta property="og:title" content="Sovereignty-Aware Routing for Hybrid Agent Systems">
+<meta property="og:description" content="Frontier models where allowed, our own GPUs where required: architecture, router design and evaluation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Paper layout: one 68ch column, numbered sections, figures full column width. Navy ink, teal accent, amber for risk. */
+:root{--bg:#fbfcfc;--fg:#16191c;--muted:#5b6670;--rule:#d9e1e5;--panel:#eef3f5;--accent:#1a7b8f;--navy:#1b3149;--warn:#a86f00;--under:#f3d9d4;--over:#f6ead0;--okc:#d6ece9;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --ink:#16191c;--slide:#fbfcfc;--grid:#eef2f4;--data:#8a979f;--teal:#279eb6;--teal-ink:#1a7b8f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121416;--fg:#e8ecee;--muted:#9aa6ad;--rule:#2e3539;--panel:#1b2023;--accent:#5cc8dc;--navy:#8fb3d9;--warn:#e2a93b;--under:#4a2a26;--over:#463a20;--okc:#1d3a37;--ink:#e8ecee;--slide:#121416;--grid:#1d2225;--data:#6f7c84;--teal:#3bb8d0;--teal-ink:#5cc8dc;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121416;--fg:#e8ecee;--muted:#9aa6ad;--rule:#2e3539;--panel:#1b2023;--accent:#5cc8dc;--navy:#8fb3d9;--warn:#e2a93b;--under:#4a2a26;--over:#463a20;--okc:#1d3a37;--ink:#e8ecee;--slide:#121416;--grid:#1d2225;--data:#6f7c84;--teal:#3bb8d0;--teal-ink:#5cc8dc;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 1.08rem/1.65 var(--serif);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+main{max-width:68ch;margin:0 auto}
+.kicker{font:500 .78rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font:600 clamp(1.7rem,4vw,2.4rem)/1.15 var(--sans);margin:.4em 0 .5em;text-wrap:balance}
+h2{font:600 1.25rem/1.3 var(--sans);margin:2.2em 0 .6em;text-wrap:balance}
+h3{font:600 1.02rem/1.3 var(--sans);margin:1.6em 0 .4em}
+.byline{font:400 .95rem var(--sans);color:var(--muted)}
+.byline b{color:var(--fg);font-weight:600}
+.abstract{background:var(--panel);padding:1.1em 1.3em;margin:1.8em 0;font-size:1rem}
+.abstract b{font-family:var(--sans);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.3em;color:var(--muted)}
+p{margin:0 0 1em}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+sup a{text-decoration:none;font-family:var(--sans);font-size:.75em}
+figure{margin:1.8em 0}
+figure .scroll{overflow-x:auto}
+figure svg{display:block;width:100%;height:auto;min-width:560px}
+figcaption{font:400 .88rem/1.5 var(--sans);color:var(--muted);margin-top:.6em}
+figcaption b{color:var(--fg)}
+svg text{font-family:var(--mono);fill:var(--ink)}
+svg .lbl{font-size:10px;letter-spacing:.06em;fill:var(--muted)} svg .ttl{font-size:12px;font-weight:500}
+svg .blk{fill:var(--slide);stroke:var(--ink);stroke-width:1.25} svg .wire{fill:none;stroke:var(--ink);stroke-width:1.25} svg .gridl{stroke:var(--grid);stroke-width:1}
+svg .grid{stroke:var(--rule)} svg .ax{font-size:10px;fill:var(--muted)} svg .lab{font:500 12px var(--sans);fill:var(--fg)} svg .val{font-size:11px;fill:var(--fg)}
+svg .b1{fill:var(--data)} svg .b2{fill:var(--accent)}
+.legend{display:flex;gap:1.2em;font:400 .85rem var(--sans);color:var(--muted);margin-top:.3em}
+.legend i{display:inline-block;width:.8em;height:.8em;margin-right:.35em;vertical-align:-.05em}
+.tw{overflow-x:auto;margin:1.2em 0}
+table{border-collapse:collapse;font:400 .9rem/1.4 var(--sans);width:100%}
+th,td{text-align:left;padding:.45em .6em;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+caption{caption-side:bottom;text-align:left;font-size:.85rem;color:var(--muted);padding-top:.5em}
+.cms{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:1.2em;margin:1.2em 0}
+table.cm td{font:500 .95rem var(--mono);text-align:center;font-variant-numeric:tabular-nums}
+table.cm td.ok{background:color-mix(in srgb,var(--okc) calc(var(--w)*100%),transparent)}
+table.cm td.under{background:color-mix(in srgb,var(--under) calc(var(--w)*300%),transparent)}
+table.cm td.over{background:color-mix(in srgb,var(--over) calc(var(--w)*300%),transparent)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+ol.refs{font:400 .88rem/1.5 var(--sans);padding-left:1.4em} ol.refs li{margin-bottom:.4em}
+ul.miss{font:400 .9rem/1.5 var(--sans);padding-left:1.1em} ul.miss .id{font-family:var(--mono);color:var(--muted)} ul.miss .pred{color:var(--warn);white-space:nowrap}
+code{font:400 .88em var(--mono);background:var(--panel);padding:.05em .3em}
+pre{font:400 .85rem/1.5 var(--mono);background:var(--panel);padding:.8em 1em;overflow-x:auto}
+.inv{counter-reset:i;list-style:none;padding:0} .inv li{counter-increment:i;padding-left:2.2em;position:relative;margin-bottom:.7em}
+.inv li::before{content:"I" counter(i);position:absolute;left:0;font:600 .85rem var(--mono);color:var(--accent);top:.15em}
+footer{margin-top:3em;font:400 .85rem var(--sans);color:var(--muted);border-top:1px solid var(--rule);padding-top:1em}
+</style>
+</head>
+<body>
+<main>
+<div class="kicker">Technical report · November 2026</div>
+<h1>Sovereignty-aware routing for hybrid agent systems: a reference architecture and an evaluation of a raise-only local router</h1>
+<p class="byline"><b>Leif Howalt Elgaard Høj</b> · Danoffice IT · <a href="https://github.com/lhhj/hybrid-agent-hub">Code and data</a> · <a href="blog.html">Blog post</a></p>
+
+<div class="abstract"><b>Abstract</b>Organisations that adopt large language model (LLM) agents handle data of mixed sensitivity, yet most deployment options serve a single trust zone: a provider's cloud or the organisation's own hardware. We describe a hybrid reference architecture in which a gateway classifies each conversation before any model sees it, restricts it to models and agents in permitted zones, and lets on-premises agents read data in place over outbound-only connections, returning schema-checked findings instead of documents. Classification is made by a local router that combines fixed rules with a small on-premises model under three invariants: it may only raise a classification, it fails closed, and policy is enforced on every tool call. Model choice within a permitted zone is delegated to NVIDIA NeMo Switchyard. On a labelled set of 72 English and Danish prompts, rules alone reached 58.3% accuracy and caught 50.0% of confidential prompts; adding the router model raised these to 69.4% and 62.5%. The remaining misses were all rated internal rather than public, so under a policy that reserves the cloud for public work no confidential prompt in the set would have reached a cloud model. An analytic token model suggests that sending findings instead of documents removes over 90% of cloud input tokens for document-heavy tasks. The reference implementation, test suite and evaluation set are open source.</div>
+
+<h2>1 Introduction</h2>
+<p>Enterprise use of LLM agents sits between two kinds of offering. Cloud assistants and hyperscaler agent platforms give access to the strongest models, but process prompts and retrieved documents in the provider's infrastructure. Private AI platforms keep data on the organisation's own hardware, but limit it to the open-weight models that hardware can serve. Most organisations hold data of both kinds, and of a third kind in between: public research, internal business records, and confidential material such as personnel cases, pay and health data. A platform built for one zone either over-exposes the confidential tier or under-serves the public one.</p>
+<p>This report describes a hybrid design that treats the trust zone as a property of each conversation rather than of the platform. It makes three contributions. First, a reference architecture in which on-premises agents work beside the data and connect outwards to a gateway, so that the planning model receives findings rather than documents and no inbound network path is required. Second, a local router whose safety rests on invariants enforced in code rather than on model accuracy. Third, an evaluation of that router on a labelled set of English and Danish prompts, together with an open implementation and test suite<sup><a href="#ref-code">12</a></sup>.</p>
+
+<h2>2 Related work</h2>
+<p><b>Gateways and protocols.</b> AI gateways such as LiteLLM, Envoy AI Gateway and agentgateway expose one OpenAI-compatible interface across providers and add keys, quotas and fallbacks; several also proxy the Model Context Protocol (MCP) for tools and the A2A protocol between agents<sup><a href="#ref-gateways">9</a>,<a href="#ref-mcp">1</a></sup>. They route on declared attributes (model name, cost, availability) rather than on the content of a request.</p>
+<p><b>Learned routing.</b> RouteLLM showed that a router trained on preference data can send a large share of queries to a cheaper model with limited loss in quality<sup><a href="#ref-routellm">2</a></sup>. vLLM Semantic Router applies small classifiers for domain, personal data and jailbreak attempts before choosing a model<sup><a href="#ref-vsr">5</a></sup>, and NVIDIA NeMo Switchyard asks a judge model whether a weaker model can solve a request, falls back between targets and logs each decision<sup><a href="#ref-switchyard">6</a></sup>. These systems optimise cost and quality. They are not designed to guarantee that a misjudged request stays inside a trust boundary, which is the property this work adds.</p>
+<p><b>Agent security.</b> Indirect prompt injection, in which instructions hidden in retrieved content take over an agent, is a well-documented risk<sup><a href="#ref-greshake">3</a>,<a href="#ref-owasp">4</a></sup>. NVIDIA's OpenShell runtime enforces network and file policy outside the agent process<sup><a href="#ref-openshell">7</a></sup>, and NeMo Guardrails screens prompts and outputs<sup><a href="#ref-guardrails">8</a></sup>. The design here is complementary: it limits what a compromised model can reach by construction.</p>
+
+<h2>3 Architecture</h2>
+<figure>
+<div class="scroll"><svg viewBox="0 0 760 360" role="img" aria-label="Architecture: a local router and the AI gateway above a Kubernetes cluster. Agent pods in OpenShell sandboxes dial out to the gateway and read data systems in place. NeMo Guardrails sit in front of worker models. A frontier model runs with Dynamo and Grove. A platform layer of scheduler, GPU Operator and observability runs on H200 or B200 and DGX Spark nodes. Optional cloud models and Hugging Face Spaces sit outside, for public work only.">
+    <defs><pattern id="gP" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" class="gridl"/></pattern></defs>
+    <rect width="760" height="360" fill="url(#gP)"/>
+    <rect x="560" y="8" width="190" height="42" class="blk" style="stroke-dasharray:4 3"/>
+    <text x="655" y="26" text-anchor="middle" class="ttl">CLOUD · HF SPACES</text>
+    <text x="655" y="41" text-anchor="middle" class="lbl">optional · public only</text>
+    <line x1="0" y1="62" x2="760" y2="62" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="14 4 2 4"/>
+    <path d="M655 50V76" class="wire" style="stroke:var(--warn)" stroke-dasharray="3 3"/>
+    <rect x="40" y="74" width="170" height="44" class="blk" style="stroke:var(--warn)"/>
+    <text x="125" y="93" text-anchor="middle" class="ttl">LOCAL ROUTER</text>
+    <text x="125" y="108" text-anchor="middle" class="lbl">small model · raise-only</text>
+    <path d="M210 96H250" class="wire"/>
+    <rect x="565" y="76" width="150" height="40" class="blk" style="stroke:var(--teal)"/>
+    <text x="640" y="93" text-anchor="middle" class="ttl">SWITCHYARD</text>
+    <text x="640" y="107" text-anchor="middle" class="lbl">model per route</text>
+    <path d="M520 96H565" class="wire"/><path d="M715 96H748V266H730" class="wire"/>
+    <rect x="250" y="74" width="270" height="44" class="blk" style="stroke:var(--teal);stroke-width:2"/>
+    <text x="385" y="93" text-anchor="middle" class="ttl">HUB · AI GATEWAY</text>
+    <text x="385" y="108" text-anchor="middle" class="lbl">policy · audit · MCP</text>
+    <rect x="16" y="130" width="728" height="222" fill="none" stroke="var(--ink)" stroke-dasharray="10 3"/>
+    <text x="26" y="146" class="lbl">KUBERNETES</text>
+    <path d="M385 118V136H190V156M385 136H560V156M370 136V156" class="wire" stroke-dasharray="6 3"/>
+    <rect x="30" y="156" width="110" height="52" class="blk" style="stroke-dasharray:2 3"/>
+    <text x="85" y="179" text-anchor="middle" class="ttl">DATA</text><text x="85" y="194" text-anchor="middle" class="lbl">ERP · DMS</text>
+    <path d="M140 182H158" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+    <rect x="158" y="152" width="130" height="60" fill="none" stroke="var(--warn)" stroke-dasharray="3 3"/>
+    <rect x="164" y="158" width="118" height="36" class="blk"/><text x="223" y="180" text-anchor="middle" class="ttl">AGENT POD</text>
+    <text x="223" y="207" text-anchor="middle" class="lbl" style="fill:var(--warn)">sandbox</text>
+    <rect x="305" y="152" width="130" height="60" fill="none" stroke="var(--warn)" stroke-dasharray="3 3"/>
+    <rect x="311" y="158" width="118" height="36" class="blk"/><text x="370" y="180" text-anchor="middle" class="ttl">AGENT POD</text>
+    <text x="370" y="207" text-anchor="middle" class="lbl" style="fill:var(--warn)">sandbox</text>
+    <rect x="495" y="152" width="130" height="60" fill="none" stroke="var(--warn)" stroke-dasharray="3 3"/>
+    <rect x="501" y="158" width="118" height="36" class="blk"/><text x="560" y="180" text-anchor="middle" class="ttl">MODEL RELAY</text>
+    <text x="560" y="207" text-anchor="middle" class="lbl" style="fill:var(--warn)">sandbox</text>
+    <path d="M223 212V226M370 212V226" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+    <rect x="158" y="226" width="277" height="24" class="blk" style="stroke:var(--warn)"/>
+    <text x="296" y="242" text-anchor="middle" class="ttl">GUARDRAILS</text>
+    <path d="M296 250V262" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+    <rect x="158" y="262" width="277" height="34" class="blk"/><text x="296" y="283" text-anchor="middle" class="ttl">WORKER MODELS · 20–120B</text>
+    <rect x="455" y="236" width="275" height="60" class="blk"/><rect x="459" y="240" width="267" height="52" fill="none" stroke="var(--ink)" stroke-width=".6"/>
+    <text x="592" y="260" text-anchor="middle" class="ttl">FRONTIER MODEL</text>
+    <text x="592" y="276" text-anchor="middle" class="lbl">Kimi / GLM · Dynamo + Grove</text>
+    <path d="M560 212V236" class="wire"/>
+    <rect x="30" y="306" width="700" height="36" class="blk" style="stroke-width:2"/>
+    <text x="380" y="328" text-anchor="middle" class="ttl">SCHEDULER · GPU OPERATOR · OBSERVABILITY · H200/B200 + DGX SPARK NODES</text>
+  </svg></div>
+<figcaption><b>Figure 1.</b> Reference architecture. A local router classifies each conversation; the gateway applies policy and selects the Switchyard route for that classification; Switchyard selects a model within it. Agents in sandboxes beside the data systems hold outbound connections to the gateway. Cloud models and Hugging Face Spaces (top right, dashed) receive public or internal work only.</figcaption>
+</figure>
+<p>The system has four trust zones: the cloud, Hugging Face Spaces, the organisation's network, and the organisation's GPU tier. Every model provider and agent declares its zone. A <b>classification policy</b> maps each of three levels to the zones it may reach: public work may use any zone, internal work excludes public web agents, and confidential work is restricted to on-premises models and agents.</p>
+<p><b>Agents</b> are small processes that run next to a data system, expose typed tools, and open a single WebSocket connection out to the gateway. Jobs travel down that connection and results travel back, so neither agents nor GPU servers need an inbound port. An agent reads documents with a local model and returns only a result that passes a strict schema (extra fields rejected), so a planning model in the cloud sees a few hundred tokens of findings per document rather than the document itself. The same mechanism lets a gateway in the cloud use a frontier-class model on-premises: a relay agent beside the GPU server forwards chat-completion requests over its outbound connection.</p>
+<p><b>Model choice</b> within a permitted zone is delegated to NVIDIA NeMo Switchyard<sup><a href="#ref-switchyard">6</a></sup>. The gateway defines one Switchyard route per classification. The routes for public and internal work may choose between a small local model and a cloud frontier model, using a local judge; the route for confidential work contains on-premises targets only. Switchyard also translates between the OpenAI and Anthropic APIs, so an agent harness such as Claude Code can use the same routes.</p>
+
+<h2>4 The local router</h2>
+<p>The router decides how sensitive a conversation is before any model sees it. It has two layers. Fixed rules, regular expressions for personal identification numbers, pay, personnel cases, health terms and explicit markings, run first. A small on-premises model then reads the prompt and returns a classification, a complexity estimate and a short reason in JSON. The router runs on-premises because it reads raw prompts before anything is known about them; a router endpoint declared to be in the cloud is refused at start-up.</p>
+<p>The design does not assume the router model is accurate or honest. Its safety rests on three invariants, each enforced in the gateway's code and covered by automated tests:</p>
+<ol class="inv">
+<li><b>Raise only.</b> The final classification is the strictest of the user's choice, the rules and the model. A router model fooled by a crafted prompt can make a conversation stricter, which costs capability, but cannot make it looser, which would cost confidentiality.</li>
+<li><b>Fail closed.</b> A router model that times out, errors or answers outside the expected format sets the classification to confidential.</li>
+<li><b>Enforce on every call.</b> The planning model is offered only the tools its classification permits, and every tool call it makes is checked again against that list, so a model that names a hidden tool, by error or under injection, is refused.</li>
+</ol>
+<p>A fourth property applies at the edge of the system. When an external harness hands a task to the gateway over MCP, and the harness's own model runs in the cloud, answers to conversations classified as confidential are not returned to it; the harness receives only the routing decision.</p>
+
+<h2>5 Implementation</h2>
+<p>The reference implementation is a Python gateway (FastAPI), an agent SDK, an on-premises document agent with a schema gate, a model relay, and a research agent deployable as a Hugging Face Space, about 2,200 lines in total<sup><a href="#ref-code">12</a></sup>. It runs with Docker Compose on a single Windows or Linux host, with Ollama serving the local models; optional profiles add vLLM for an on-premises frontier model and Switchyard. Forty automated tests cover the invariants above, the relay, reasoning passthrough for models that return a separate reasoning field, and the Switchyard integration, in which Switchyard's own engine is run against stand-in models.</p>
+
+<h2>6 Evaluation</h2>
+<h3>6.1 Router classification</h3>
+<p><b>Data.</b> The evaluation set has 72 prompts written by the author, 24 per level, 41 in English and 31 in Danish. Labels follow the router's definitions: public for general knowledge, internal for company information not about identifiable people, confidential for personal data, personnel matters, health, pay and material marked confidential. Twenty-seven prompts are marked hard: they contain no keyword any rule matches (for example “Draft a warning letter to Jens about his repeated absence”), or they contain a sensitive keyword in a public question (“What is a framework contract under EU procurement rules?”).</p>
+<p><b>Method.</b> Each prompt is sent to the gateway's dry-run endpoint with the user's classification set to public, the most permissive start, so the router alone is measured. Two passes are made: rules only, and rules plus the router model (qwen2.5:3b). The primary metric is the share of confidential prompts caught; a missed confidential prompt is one that could have reached a cloud model. Secondary metrics are accuracy, over-classification (stricter than the label, which costs capability) and latency.</p>
+<p><b>Results.</b> Rules alone classified 58.3% of prompts correctly and caught 50.0% of confidential prompts. They were accurate on plain prompts (93.3%) and, by construction of the set, on none of the hard ones. Adding the router model (qwen2.5:3b, a 3-billion-parameter instruction model run on CPU or a consumer GPU through Ollama) raised overall accuracy from 58.3% to 69.4% and the share of confidential prompts caught from 50.0% to 62.5%. On the hard prompts, which contain no keyword a rule could match, accuracy rose from 0.0% to 40.7%. Median router-model latency was 386 ms (95th percentile 489 ms) on the author's workstation. In 3 cases the router model's answer was not in the expected format and the fail-closed rule set the classification to confidential; all of these were public prompts, so the cost was capability, not exposure.</p>
+<figure>
+<div class="scroll"><svg viewBox="0 0 640 210" role="img" aria-label="Bar chart comparing rules only with rules plus router model."><line x1="210.0" y1="12" x2="210.0" y2="184" class="grid"/><text x="210.0" y="200" text-anchor="middle" class="ax">0%</text><line x1="310.0" y1="12" x2="310.0" y2="184" class="grid"/><text x="310.0" y="200" text-anchor="middle" class="ax">25%</text><line x1="410.0" y1="12" x2="410.0" y2="184" class="grid"/><text x="410.0" y="200" text-anchor="middle" class="ax">50%</text><line x1="510.0" y1="12" x2="510.0" y2="184" class="grid"/><text x="510.0" y="200" text-anchor="middle" class="ax">75%</text><line x1="610.0" y1="12" x2="610.0" y2="184" class="grid"/><text x="610.0" y="200" text-anchor="middle" class="ax">100%</text><text x="200" y="36" text-anchor="end" class="lab">Accuracy, all prompts</text><rect x="210" y="18" width="233.2" height="16" class="b1"/><text x="449.2" y="30" class="val">58%</text><rect x="210" y="36" width="277.6" height="16" class="b2"/><text x="493.6" y="48" class="val">69%</text><text x="200" y="82" text-anchor="end" class="lab">Accuracy, hard prompts</text><rect x="210" y="64" width="0.0" height="16" class="b1"/><text x="216.0" y="76" class="val">0%</text><rect x="210" y="82" width="162.8" height="16" class="b2"/><text x="378.8" y="94" class="val">41%</text><text x="200" y="128" text-anchor="end" class="lab">Confidential prompts caught</text><rect x="210" y="110" width="200.0" height="16" class="b1"/><text x="416.0" y="122" class="val">50%</text><rect x="210" y="128" width="250.0" height="16" class="b2"/><text x="466.0" y="140" class="val">62%</text></svg></div>
+<div class="legend"><span><i style="background:var(--data)"></i>Rules only</span><span><i style="background:var(--accent)"></i>Rules + router model</span></div>
+<figcaption><b>Figure 2.</b> Router performance on 72 labelled prompts, starting from the most permissive classification.</figcaption>
+</figure>
+<div class="cms"><table class="cm"><caption>Rules only</caption><thead><tr><th>label \ predicted</th><th>public</th><th>internal</th><th>confidential</th></tr></thead><tbody><tr><th scope="row">public</th><td class="ok" style="--w:0.83">20</td><td class="over" style="--w:0.08">2</td><td class="over" style="--w:0.08">2</td></tr><tr><th scope="row">internal</th><td class="under" style="--w:0.58">14</td><td class="ok" style="--w:0.42">10</td><td class="over" style="--w:0.00">0</td></tr><tr><th scope="row">confidential</th><td class="under" style="--w:0.50">12</td><td class="under" style="--w:0.00">0</td><td class="ok" style="--w:0.50">12</td></tr></tbody></table><table class="cm"><caption>Rules + router model</caption><thead><tr><th>label \ predicted</th><th>public</th><th>internal</th><th>confidential</th></tr></thead><tbody><tr><th scope="row">public</th><td class="ok" style="--w:0.58">14</td><td class="over" style="--w:0.21">5</td><td class="over" style="--w:0.21">5</td></tr><tr><th scope="row">internal</th><td class="under" style="--w:0.12">3</td><td class="ok" style="--w:0.88">21</td><td class="over" style="--w:0.00">0</td></tr><tr><th scope="row">confidential</th><td class="under" style="--w:0.00">0</td><td class="under" style="--w:0.38">9</td><td class="ok" style="--w:0.62">15</td></tr></tbody></table></div>
+<p class="byline">Rows are labels, columns are predictions. Shading below the diagonal marks under-classification, above it over-classification.</p>
+<p>The confidential prompts the full router still missed were:</p><ul class="miss"><li><span class="id">p52</span> “List employees on long-term sick leave this quarter.” <span class="pred">→ internal</span></li><li><span class="id">p56</span> “Draft a warning letter to Jens about his repeated absence.” <span class="pred">→ internal</span></li><li><span class="id">p57</span> “What did the psychologist&#x27;s report say about the employee&#x27;s return to work?” <span class="pred">→ internal</span></li><li><span class="id">p60</span> “Extract home addresses and phone numbers for all staff in the Aarhus office.” <span class="pred">→ internal</span></li><li><span class="id">p62</span> “Skriv en opsigelse til medarbejderen i lageret.” <span class="pred">→ internal</span></li><li><span class="id">p64</span> “Hvilke medarbejdere er sygemeldt med stress?” <span class="pred">→ internal</span></li><li><span class="id">p68</span> “Lav en oversigt over medarbejdernes private adresser.” <span class="pred">→ internal</span></li><li><span class="id">p70</span> “Hvem i teamet har fået en advarsel i år, og hvorfor?” <span class="pred">→ internal</span></li><li><span class="id">p71</span> “Compare the performance reviews of the three team leads.” <span class="pred">→ internal</span></li></ul>
+<p><b>Rule revision.</b> The first run of the rules missed four plain confidential prompts because the patterns did not cover inflected forms (“medical records”, Danish “personalesagen”, “fyringen”, “fortroligt”). The patterns were revised to match inflections of the words they already listed, without adding the vocabulary of the hard prompts, and the figures above are for the revised rules. Because the revision was made on the evaluation set, the rules-only figure for plain prompts is optimistic.</p>
+<h3>6.2 What a miss means: exposure under two policies</h3>
+<p>Whether a misclassified prompt can reach a cloud model depends on the policy, not only on the router. Under the <b>default policy</b>, internal work may use cloud models, so a confidential prompt rated internal is exposed. Under a <b>strict policy</b>, only public work may use the cloud, so a confidential prompt is exposed only if it is rated public. Table 1 applies both policies to the same predictions.</p>
+<div class="tw"><table>
+<thead><tr><th>Confidential prompts that could reach a cloud model</th><th>Rules only</th><th>Rules + router model</th></tr></thead>
+<tbody>
+<tr><td>Default policy (internal may use the cloud)</td><td class="num">50.0%</td><td class="num">37.5%</td></tr>
+<tr><td>Strict policy (only public may use the cloud)</td><td class="num">50.0%</td><td class="num">0.0%</td></tr>
+<tr><td>Cost of the strict policy: public prompts rated stricter, so kept off the cloud</td><td class="num">16.7%</td><td class="num">41.7%</td></tr>
+</tbody>
+<caption>Table 1. Exposure of the 24 confidential prompts under two policies. Under the strict policy, all internal work also stays on-premises.</caption>
+</table></div>
+<p>The router model's errors are asymmetric in a useful way: it rarely rates sensitive material as public. Combined with the strict policy this removes cloud exposure on this set entirely, at the price of keeping internal work and the over-classified public prompts on on-premises models. Rules alone do not have this property, because a prompt without keywords stays at the user's starting level.</p>
+
+<h3>6.3 Cloud tokens</h3>
+<p>For a task that reads <i>d</i> documents of <i>t</i><sub>doc</sub> tokens with a prompt of <i>p</i> tokens, a cloud-only design sends <i>d·t</i><sub>doc</sub> + <i>p</i> input tokens to the cloud. In the hybrid design a fraction <i>f</i> of tasks is planned in the cloud, and those send <i>d·t</i><sub>f</sub> + <i>p</i>, where <i>t</i><sub>f</sub> is the size of the checked findings. With <i>d</i> = 3, <i>t</i><sub>doc</sub> = 4,150, <i>t</i><sub>f</sub> = 210, <i>p</i> = 2,000 and <i>f</i> = 0.4 (confidential and simple tasks kept local), cloud input falls from 14,450 to 1,052 tokens per task on average, a reduction of 93%. With an on-premises planner and only public research in the cloud (<i>f</i> = 0.1) the reduction is 98%. These figures are analytic; the parameters are the first to measure in a pilot.</p>
+
+<h3>6.4 Safety properties</h3>
+<div class="tw"><table>
+<thead><tr><th>Property</th><th>How it is tested</th></tr></thead>
+<tbody>
+<tr><td>Raise only</td><td>A prompt the router model rates public stays confidential when the user chose confidential</td></tr>
+<tr><td>Fail closed</td><td>A router answer in the wrong format yields confidential, and the conversation runs on-premises</td></tr>
+<tr><td>Enforce on every call</td><td>A stand-in model that ignores its tool list and calls a hidden Hugging Face tool is refused</td></tr>
+<tr><td>Boundary of the confidential route</td><td>Auto mode sends a confidential conversation to Switchyard's on-premises route, and the answer is served by the on-premises target</td></tr>
+<tr><td>No confidential answers to cloud harnesses</td><td>An MCP task classified confidential is executed, but its answer is withheld from the client</td></tr>
+<tr><td>No inbound path</td><td>A cloud-side gateway completes a tool loop with an on-premises model through the relay agent's outbound connection</td></tr>
+</tbody></table></div>
+
+<h2>7 Discussion and limitations</h2>
+<p>The results support the division of labour in the design. Fixed rules are fast and predictable but cannot recognise sensitivity that is expressed without keywords, which is common in personnel and health matters. A small local model recovers part of that gap. It did not, in this evaluation, recover enough to serve as the only safeguard under the default policy: a 3-billion-parameter model still rated a substantial share of confidential prompts as internal. Two conclusions follow. The classification a user or a data source sets must remain the primary control, with the router as a second line that can only add caution. And where confidential data is common, the strict policy, cloud models for public work only, turns the router's asymmetric errors into a safe default. A larger or fine-tuned router model, or a dedicated classifier, may allow the default policy; that is an empirical question for a larger evaluation set.</p>
+<p>The evaluation has clear limits. The prompt set is small, written and labelled by one person, and partly constructed to be hard; it measures relative behaviour rather than expected accuracy on real traffic. The rules were revised on the same set. Only one router model was tested. The reference implementation runs one gateway without high availability, single sign-on or per-team separation, and its agent protocol is its own rather than A2A. Switchyard describes itself as pre-alpha software. Running a frontier-class model on-premises is capital-intensive: Kimi K3, at 1.56 TB of weights, needs roughly two 8-GPU H200 servers<sup><a href="#ref-kimi">10</a></sup>, and sharing such hardware between teams calls for Kubernetes scheduling of the kind provided by KAI Scheduler or Run:ai<sup><a href="#ref-runai">11</a></sup>.</p>
+<p>Natural next steps are an evaluation on a few hundred prompts drawn from real use and labelled by data owners, a comparison of router models including dedicated classifiers, sandboxing agents with OpenShell, and measuring the token model's parameters in a pilot.</p>
+
+<h2>8 Conclusion</h2>
+<p>Treating the trust zone as a property of each conversation lets one platform use frontier cloud models where data rules allow and the organisation's own GPUs where they require it. The design keeps the decision that protects data deterministic and logged, and lets models make only the decisions whose errors are recoverable: a small local router may raise, but never lower, a classification, and a routing proxy chooses among models only within the zones that classification allows.</p>
+
+<h2>Reproducibility</h2>
+<p>Code, tests and the evaluation set are at <a href="https://github.com/lhhj/hybrid-agent-hub">github.com/lhhj/hybrid-agent-hub</a>. With the gateway running:</p>
+<pre>python eval/router_eval.py --url http://localhost:7860 --token &lt;HUB_TOKEN&gt;</pre>
+<p class="byline">Results in this report: run of 2026-11-05T06:36:11, router model <code>qwen2.5:3b</code> via Ollama, fail level <code>confidential</code>.</p>
+
+<h2>References</h2>
+<ol class="refs"><li id="ref-mcp">Model Context Protocol. Specification and documentation. <a href="https://modelcontextprotocol.io">modelcontextprotocol.io</a></li><li id="ref-routellm">I. Ong et al. (2024). RouteLLM: Learning to route LLMs with preference data. arXiv:2406.18665. <a href="https://arxiv.org/abs/2406.18665">arxiv.org/abs/2406.18665</a></li><li id="ref-greshake">K. Greshake et al. (2023). Not what you&#x27;ve signed up for: Compromising real-world LLM-integrated applications with indirect prompt injection. arXiv:2302.12173. <a href="https://arxiv.org/abs/2302.12173">arxiv.org/abs/2302.12173</a></li><li id="ref-owasp">OWASP. Top 10 for Large Language Model Applications: LLM01 Prompt Injection. <a href="https://genai.owasp.org/llmrisk/llm01-prompt-injection/">genai.owasp.org/llmrisk/llm01-prompt-injection/</a></li><li id="ref-vsr">vLLM project (2026). vLLM Semantic Router v0.1 Iris. <a href="https://vllm.ai/blog/2026-01-05-vllm-sr-iris">vllm.ai/blog/2026-01-05-vllm-sr-iris</a></li><li id="ref-switchyard">NVIDIA. NeMo Switchyard, v0.3.0 (GitHub). <a href="https://github.com/NVIDIA-NeMo/Switchyard">github.com/NVIDIA-NeMo/Switchyard</a></li><li id="ref-openshell">NVIDIA. NemoClaw enterprise readiness and admin capability guidance. <a href="https://docs.nvidia.com/nemoclaw/user-guide/openclaw/reference/enterprise-readiness">docs.nvidia.com/nemoclaw/user-guide/openclaw/reference/enterprise-readiness</a></li><li id="ref-guardrails">VentureBeat (2025). NVIDIA NeMo Guardrails NIM microservices for agent safety. <a href="https://venturebeat.com/ai/nvidia-boosts-agentic-ai-safety-with-nemo-guardrails-promising-better-protection-with-low-latency">venturebeat.com/ai/nvidia-boosts-agentic-ai-safety-with-nemo-guardrails-promising-better-protection-with-low-latency</a></li><li id="ref-gateways">Maxim (2026). Open-source agent gateways for MCP and A2A. <a href="https://www.getmaxim.ai/articles/best-open-source-agent-gateways-for-mcp-and-a2a-in-2026/">www.getmaxim.ai/articles/best-open-source-agent-gateways-for-mcp-and-a2a-in-2026/</a></li><li id="ref-kimi">Featherless (2026). How to run Kimi K3 locally: hardware requirements. <a href="https://featherless.ai/blog/how-to-run-kimi-k3-locally-hardware-requirements">featherless.ai/blog/how-to-run-kimi-k3-locally-hardware-requirements</a></li><li id="ref-runai">NVIDIA Technical Blog. Multi-node scheduling for LLM inference with Run:ai and Dynamo. <a href="https://developer.nvidia.com/blog/smart-multi-node-scheduling-for-fast-and-efficient-llm-inference-with-nvidia-runai-and-nvidia-dynamo">developer.nvidia.com/blog/smart-multi-node-scheduling-for-fast-and-efficient-llm-inference-with-nvidia-runai-and-nvidia-dynamo</a></li><li id="ref-code">L. H. E. Høj (2026). hybrid-agent-hub: reference implementation, tests and evaluation set (GitHub). <a href="https://github.com/lhhj/hybrid-agent-hub">github.com/lhhj/hybrid-agent-hub</a></li></ol>
+
+<footer>© 2026 Leif Howalt Elgaard Høj. Text licensed CC BY 4.0. The views are the author's own.</footer>
+</main>
+</body>
+</html>

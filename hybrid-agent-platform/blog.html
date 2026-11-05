@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Frontier Models Where Allowed</title>
+<meta name="description" content="Why I built a hybrid agent platform that routes each conversation by data sensitivity, and what a small on-premises router model catches.">
+<meta name="author" content="Leif Howalt Elgaard Høj">
+<meta property="og:title" content="Frontier Models Where Allowed">
+<meta property="og:description" content="Why I built a hybrid agent platform that routes each conversation by data sensitivity, and what a small on-premises router model catches.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Paper layout: one 68ch column, numbered sections, figures full column width. Navy ink, teal accent, amber for risk. */
+:root{--bg:#fbfcfc;--fg:#16191c;--muted:#5b6670;--rule:#d9e1e5;--panel:#eef3f5;--accent:#1a7b8f;--navy:#1b3149;--warn:#a86f00;--under:#f3d9d4;--over:#f6ead0;--okc:#d6ece9;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --ink:#16191c;--slide:#fbfcfc;--grid:#eef2f4;--data:#8a979f;--teal:#279eb6;--teal-ink:#1a7b8f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121416;--fg:#e8ecee;--muted:#9aa6ad;--rule:#2e3539;--panel:#1b2023;--accent:#5cc8dc;--navy:#8fb3d9;--warn:#e2a93b;--under:#4a2a26;--over:#463a20;--okc:#1d3a37;--ink:#e8ecee;--slide:#121416;--grid:#1d2225;--data:#6f7c84;--teal:#3bb8d0;--teal-ink:#5cc8dc;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121416;--fg:#e8ecee;--muted:#9aa6ad;--rule:#2e3539;--panel:#1b2023;--accent:#5cc8dc;--navy:#8fb3d9;--warn:#e2a93b;--under:#4a2a26;--over:#463a20;--okc:#1d3a37;--ink:#e8ecee;--slide:#121416;--grid:#1d2225;--data:#6f7c84;--teal:#3bb8d0;--teal-ink:#5cc8dc;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 1.08rem/1.65 var(--serif);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+main{max-width:68ch;margin:0 auto}
+.kicker{font:500 .78rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font:600 clamp(1.7rem,4vw,2.4rem)/1.15 var(--sans);margin:.4em 0 .5em;text-wrap:balance}
+h2{font:600 1.25rem/1.3 var(--sans);margin:2.2em 0 .6em;text-wrap:balance}
+h3{font:600 1.02rem/1.3 var(--sans);margin:1.6em 0 .4em}
+.byline{font:400 .95rem var(--sans);color:var(--muted)}
+.byline b{color:var(--fg);font-weight:600}
+.abstract{background:var(--panel);padding:1.1em 1.3em;margin:1.8em 0;font-size:1rem}
+.abstract b{font-family:var(--sans);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.3em;color:var(--muted)}
+p{margin:0 0 1em}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+sup a{text-decoration:none;font-family:var(--sans);font-size:.75em}
+figure{margin:1.8em 0}
+figure .scroll{overflow-x:auto}
+figure svg{display:block;width:100%;height:auto;min-width:560px}
+figcaption{font:400 .88rem/1.5 var(--sans);color:var(--muted);margin-top:.6em}
+figcaption b{color:var(--fg)}
+svg text{font-family:var(--mono);fill:var(--ink)}
+svg .lbl{font-size:10px;letter-spacing:.06em;fill:var(--muted)} svg .ttl{font-size:12px;font-weight:500}
+svg .blk{fill:var(--slide);stroke:var(--ink);stroke-width:1.25} svg .wire{fill:none;stroke:var(--ink);stroke-width:1.25} svg .gridl{stroke:var(--grid);stroke-width:1}
+svg .grid{stroke:var(--rule)} svg .ax{font-size:10px;fill:var(--muted)} svg .lab{font:500 12px var(--sans);fill:var(--fg)} svg .val{font-size:11px;fill:var(--fg)}
+svg .b1{fill:var(--data)} svg .b2{fill:var(--accent)}
+.legend{display:flex;gap:1.2em;font:400 .85rem var(--sans);color:var(--muted);margin-top:.3em}
+.legend i{display:inline-block;width:.8em;height:.8em;margin-right:.35em;vertical-align:-.05em}
+.tw{overflow-x:auto;margin:1.2em 0}
+table{border-collapse:collapse;font:400 .9rem/1.4 var(--sans);width:100%}
+th,td{text-align:left;padding:.45em .6em;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+caption{caption-side:bottom;text-align:left;font-size:.85rem;color:var(--muted);padding-top:.5em}
+.cms{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:1.2em;margin:1.2em 0}
+table.cm td{font:500 .95rem var(--mono);text-align:center;font-variant-numeric:tabular-nums}
+table.cm td.ok{background:color-mix(in srgb,var(--okc) calc(var(--w)*100%),transparent)}
+table.cm td.under{background:color-mix(in srgb,var(--under) calc(var(--w)*300%),transparent)}
+table.cm td.over{background:color-mix(in srgb,var(--over) calc(var(--w)*300%),transparent)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+ol.refs{font:400 .88rem/1.5 var(--sans);padding-left:1.4em} ol.refs li{margin-bottom:.4em}
+ul.miss{font:400 .9rem/1.5 var(--sans);padding-left:1.1em} ul.miss .id{font-family:var(--mono);color:var(--muted)} ul.miss .pred{color:var(--warn);white-space:nowrap}
+code{font:400 .88em var(--mono);background:var(--panel);padding:.05em .3em}
+pre{font:400 .85rem/1.5 var(--mono);background:var(--panel);padding:.8em 1em;overflow-x:auto}
+.inv{counter-reset:i;list-style:none;padding:0} .inv li{counter-increment:i;padding-left:2.2em;position:relative;margin-bottom:.7em}
+.inv li::before{content:"I" counter(i);position:absolute;left:0;font:600 .85rem var(--mono);color:var(--accent);top:.15em}
+footer{margin-top:3em;font:400 .85rem var(--sans);color:var(--muted);border-top:1px solid var(--rule);padding-top:1em}
+</style>
+<style>.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1em;margin:1.4em 0}
+.cards a{display:block;background:var(--panel);padding:1em 1.1em;text-decoration:none;color:var(--fg)}
+.cards a:hover,.cards a:focus-visible{outline:2px solid var(--accent)}
+.cards b{font:600 1rem var(--sans);display:block;margin-bottom:.25em;color:var(--fg)}
+.cards span{font:400 .9rem/1.45 var(--sans);color:var(--muted)}
+.lede{font-size:1.2rem;line-height:1.55}</style>
+</head>
+<body>
+<main>
+<div class="kicker">Blog · November 2026</div>
+<h1>Frontier models where allowed, our own GPUs where required</h1>
+<p class="byline"><b>Leif Howalt Elgaard Høj</b> · Danoffice IT · <a href="paper.html">Technical report</a> · <a href="https://github.com/lhhj/hybrid-agent-hub">Code</a></p>
+
+<p class="lede">Most conversations I have with customers about AI agents end up at the same question: can we use the best models without sending our most sensitive data to someone else's cloud? Usually the answer offered is a choice. Pick the cloud and get the best models, or pick your own hardware and keep the data. I wanted to see whether a single platform could make that choice per conversation instead.</p>
+
+<h2>The idea</h2>
+<p>An organisation's data is not one thing. Some of it is public: product news, research, documentation. Some is internal: contracts, customers, budgets. And some is confidential: personnel cases, pay, health. Each kind can safely go to a different set of models.</p>
+<p>So the platform starts every conversation by asking how sensitive it is. A small router on-premises reads the prompt, checks it against fixed rules and a small local model, and labels it public, internal or confidential. The gateway then only lets that conversation reach models and agents in permitted places. Confidential work stays on the organisation's own models. Public research can use a frontier model in the cloud, or a research agent running as a Hugging Face Space.</p>
+<p>The agents themselves sit next to the data, in the document system or the ERP, and connect out to the gateway. They read documents locally and return short, checked findings, so a cloud model that plans the work sees a few hundred tokens per document instead of the document. In my token model that removes over 90% of the cloud input for document-heavy tasks.</p>
+
+<h2>Making a model-based router safe</h2>
+<p>Putting a model in charge of deciding what is confidential sounds risky, and it would be if the model's answer were trusted. The router is built so that it does not have to be. It may only make a conversation stricter, never looser. If the router model is slow, down or answers nonsense, the conversation is treated as confidential. And every tool the planning model calls is checked again in code, so a model that has been tricked by a hidden instruction in a document still cannot reach a tool it was not offered.</p>
+<p>Which model then answers is a different question: a cheaper local one, or a frontier model. That I leave to NVIDIA's new open-source router, NeMo Switchyard. It gets one route per classification, and the confidential route only contains on-premises models. A wrong choice by Switchyard can cost money. It cannot move data across the boundary.</p>
+
+<h2>What I measured</h2>
+<p>I wrote 72 prompts in English and Danish, 24 for each level, and labelled them. About a third are deliberately hard: confidential requests without any obvious keyword, or public questions that happen to contain words like “salary” or “contract”.</p>
+<p>Rules alone caught 50% of the confidential prompts. Every one they missed was a prompt with no keyword to match, such as a warning letter about someone's absence or a question about who is on sick leave. With a 3-billion-parameter model added on-premises, the router caught 62%, and overall accuracy rose from 58% to 69%. The model answered in a median of 0.4 seconds on my workstation.</p><p>62% is not good enough to be the only safeguard, and I want to be clear about that. But the misses were interesting: the small model rated none of the confidential prompts as public. The ones it missed, it rated internal. So if an organisation lets only public work go to the cloud, none of the confidential prompts in the set would have left the building. The price is that internal work stays on local models too. That is a policy choice the platform makes explicit, rather than a hope about model accuracy. The classification a user or a data source sets stays the primary control; the router can only add caution.</p>
+<p>The set is small and I wrote it myself, so treat the numbers as a first measurement rather than a benchmark. The <a href="paper.html">technical report</a> has the details, the confusion matrices and the limitations.</p>
+
+<h2>Try it</h2>
+<p>The code is open source. On a Windows PC with Docker Desktop it starts in three steps: start Docker, double-click <code>start-local.cmd</code>, and double-click <code>connect-harness.cmd</code> to connect Claude Code, Claude Desktop or Cursor. <code>run-eval.cmd</code> reruns the evaluation on your own machine, and the prompt set is a plain file you can extend with your own examples.</p>
+
+<h2>What's next</h2>
+<p>The obvious next step is a pilot with real data owners: a few hundred real prompts labelled by the people responsible for the data, agents beside a real document system, and the token savings measured rather than modelled. If your organisation has data that cannot leave the building but would benefit from frontier models elsewhere, I would like to hear from you.</p>
+
+<div class="cards">
+<a href="paper.html"><b>Technical report</b><span>Architecture, router design, evaluation and limitations.</span></a>
+<a href="https://github.com/lhhj/hybrid-agent-hub"><b>Code and data</b><span>Reference implementation, 40 tests and the evaluation set.</span></a>
+<a href="deck.html"><b>Slide deck</b><span>The platform in 13 slides, with sizing and a rollout plan.</span></a>
+<a href="field-guide.html"><b>RTX Spark field guide</b><span>Long-form article on local and frontier AI on Spark hardware.</span></a>
+</div>
+<footer>© 2026 Leif Howalt Elgaard Høj. Text licensed CC BY 4.0. The views are my own.</footer>
+</main>
+</body>
+</html>

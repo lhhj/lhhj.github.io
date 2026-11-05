@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hybrid Agent Platform</title>
+<meta name="description" content="A hybrid agent platform that routes each conversation by data sensitivity: report, blog post, deck, field guide and code.">
+<meta name="author" content="Leif Howalt Elgaard Høj">
+<meta property="og:title" content="Hybrid Agent Platform">
+<meta property="og:description" content="A hybrid agent platform that routes each conversation by data sensitivity: report, blog post, deck, field guide and code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Paper layout: one 68ch column, numbered sections, figures full column width. Navy ink, teal accent, amber for risk. */
+:root{--bg:#fbfcfc;--fg:#16191c;--muted:#5b6670;--rule:#d9e1e5;--panel:#eef3f5;--accent:#1a7b8f;--navy:#1b3149;--warn:#a86f00;--under:#f3d9d4;--over:#f6ead0;--okc:#d6ece9;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --ink:#16191c;--slide:#fbfcfc;--grid:#eef2f4;--data:#8a979f;--teal:#279eb6;--teal-ink:#1a7b8f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121416;--fg:#e8ecee;--muted:#9aa6ad;--rule:#2e3539;--panel:#1b2023;--accent:#5cc8dc;--navy:#8fb3d9;--warn:#e2a93b;--under:#4a2a26;--over:#463a20;--okc:#1d3a37;--ink:#e8ecee;--slide:#121416;--grid:#1d2225;--data:#6f7c84;--teal:#3bb8d0;--teal-ink:#5cc8dc;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121416;--fg:#e8ecee;--muted:#9aa6ad;--rule:#2e3539;--panel:#1b2023;--accent:#5cc8dc;--navy:#8fb3d9;--warn:#e2a93b;--under:#4a2a26;--over:#463a20;--okc:#1d3a37;--ink:#e8ecee;--slide:#121416;--grid:#1d2225;--data:#6f7c84;--teal:#3bb8d0;--teal-ink:#5cc8dc;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 1.08rem/1.65 var(--serif);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+main{max-width:68ch;margin:0 auto}
+.kicker{font:500 .78rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font:600 clamp(1.7rem,4vw,2.4rem)/1.15 var(--sans);margin:.4em 0 .5em;text-wrap:balance}
+h2{font:600 1.25rem/1.3 var(--sans);margin:2.2em 0 .6em;text-wrap:balance}
+h3{font:600 1.02rem/1.3 var(--sans);margin:1.6em 0 .4em}
+.byline{font:400 .95rem var(--sans);color:var(--muted)}
+.byline b{color:var(--fg);font-weight:600}
+.abstract{background:var(--panel);padding:1.1em 1.3em;margin:1.8em 0;font-size:1rem}
+.abstract b{font-family:var(--sans);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.3em;color:var(--muted)}
+p{margin:0 0 1em}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+sup a{text-decoration:none;font-family:var(--sans);font-size:.75em}
+figure{margin:1.8em 0}
+figure .scroll{overflow-x:auto}
+figure svg{display:block;width:100%;height:auto;min-width:560px}
+figcaption{font:400 .88rem/1.5 var(--sans);color:var(--muted);margin-top:.6em}
+figcaption b{color:var(--fg)}
+svg text{font-family:var(--mono);fill:var(--ink)}
+svg .lbl{font-size:10px;letter-spacing:.06em;fill:var(--muted)} svg .ttl{font-size:12px;font-weight:500}
+svg .blk{fill:var(--slide);stroke:var(--ink);stroke-width:1.25} svg .wire{fill:none;stroke:var(--ink);stroke-width:1.25} svg .gridl{stroke:var(--grid);stroke-width:1}
+svg .grid{stroke:var(--rule)} svg .ax{font-size:10px;fill:var(--muted)} svg .lab{font:500 12px var(--sans);fill:var(--fg)} svg .val{font-size:11px;fill:var(--fg)}
+svg .b1{fill:var(--data)} svg .b2{fill:var(--accent)}
+.legend{display:flex;gap:1.2em;font:400 .85rem var(--sans);color:var(--muted);margin-top:.3em}
+.legend i{display:inline-block;width:.8em;height:.8em;margin-right:.35em;vertical-align:-.05em}
+.tw{overflow-x:auto;margin:1.2em 0}
+table{border-collapse:collapse;font:400 .9rem/1.4 var(--sans);width:100%}
+th,td{text-align:left;padding:.45em .6em;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+caption{caption-side:bottom;text-align:left;font-size:.85rem;color:var(--muted);padding-top:.5em}
+.cms{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:1.2em;margin:1.2em 0}
+table.cm td{font:500 .95rem var(--mono);text-align:center;font-variant-numeric:tabular-nums}
+table.cm td.ok{background:color-mix(in srgb,var(--okc) calc(var(--w)*100%),transparent)}
+table.cm td.under{background:color-mix(in srgb,var(--under) calc(var(--w)*300%),transparent)}
+table.cm td.over{background:color-mix(in srgb,var(--over) calc(var(--w)*300%),transparent)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+ol.refs{font:400 .88rem/1.5 var(--sans);padding-left:1.4em} ol.refs li{margin-bottom:.4em}
+ul.miss{font:400 .9rem/1.5 var(--sans);padding-left:1.1em} ul.miss .id{font-family:var(--mono);color:var(--muted)} ul.miss .pred{color:var(--warn);white-space:nowrap}
+code{font:400 .88em var(--mono);background:var(--panel);padding:.05em .3em}
+pre{font:400 .85rem/1.5 var(--mono);background:var(--panel);padding:.8em 1em;overflow-x:auto}
+.inv{counter-reset:i;list-style:none;padding:0} .inv li{counter-increment:i;padding-left:2.2em;position:relative;margin-bottom:.7em}
+.inv li::before{content:"I" counter(i);position:absolute;left:0;font:600 .85rem var(--mono);color:var(--accent);top:.15em}
+footer{margin-top:3em;font:400 .85rem var(--sans);color:var(--muted);border-top:1px solid var(--rule);padding-top:1em}
+</style>
+<style>.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1em;margin:1.4em 0}
+.cards a{display:block;background:var(--panel);padding:1em 1.1em;text-decoration:none;color:var(--fg)}
+.cards a:hover,.cards a:focus-visible{outline:2px solid var(--accent)}
+.cards b{font:600 1rem var(--sans);display:block;margin-bottom:.25em;color:var(--fg)}
+.cards span{font:400 .9rem/1.45 var(--sans);color:var(--muted)}
+.lede{font-size:1.2rem;line-height:1.55}</style>
+</head>
+<body>
+<main>
+<div class="kicker">Project · November 2026</div>
+<h1>Hybrid agent platform</h1>
+<p class="lede">Frontier models where the data rules allow, the organisation's own GPUs where they require it. A gateway classifies each conversation, a small on-premises router may only raise that classification, and agents beside the data return findings instead of documents.</p>
+<p class="byline"><b>Leif Howalt Elgaard Høj</b> · Danoffice IT</p>
+<div class="cards">
+<a href="blog.html"><b>Blog post</b><span>Why I built it and what the router catches.</span></a>
+<a href="paper.html"><b>Technical report</b><span>Architecture, router invariants and a 72-prompt evaluation.</span></a>
+<a href="deck.html"><b>Slide deck</b><span>13 slides: architecture, sizing, token savings, rollout.</span></a>
+<a href="deck.pptx"><b>Slide deck as PowerPoint</b><span>The same deck as an editable .pptx file.</span></a>
+<a href="field-guide.html"><b>RTX Spark field guide</b><span>Local and frontier AI on Spark laptops and DGX Spark.</span></a>
+<a href="field-guide-static.html"><b>Field guide, static</b><span>The same article without animation.</span></a>
+<a href="https://github.com/lhhj/hybrid-agent-hub"><b>Code and data</b><span>Open source: gateway, router, agents, Switchyard routes, tests and evaluation set.</span></a>
+</div>
+<footer>© 2026 Leif Howalt Elgaard Høj. Text licensed CC BY 4.0. Code licensed under its repository's licence.</footer>
+</main>
+</body>
+</html>

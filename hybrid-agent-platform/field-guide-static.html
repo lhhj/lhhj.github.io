@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spark Field Guide Static Edition</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a long-form technical article in Danoffice IT colours. Navy hero band, one reading column, schematic figures on a faint grid.
+   Navy = request/job, brand teal = result or "fits", grey = local data traffic, amber = limits and boundaries. */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#141414; --muted:#5a6770; --line:#d5dee2; --grid:#e8eef0;
+  --copper:#1b3149; --teal:#279eb6; --teal-ink:#1a7b8f; --data:#8a979f; --warn:#b07400;
+  --hero-bg:#1b3149; --hero-ink:#ffffff; --hero-muted:#b9c8d6;
+  --f-display:"Barlow","Helvetica Neue",Arial,sans-serif;
+  --f-text:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141414; --panel:#1c1f22; --ink:#eef2f4; --muted:#9ba7ae; --line:#31383d; --grid:#22272a;
+  --copper:#8fb3d9; --teal:#3bb8d0; --teal-ink:#5cc8dc; --data:#6f7c84; --warn:#e2a93b;
+  --hero-bg:#1b3149; --hero-ink:#ffffff; --hero-muted:#b9c8d6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141414; --panel:#1c1f22; --ink:#eef2f4; --muted:#9ba7ae; --line:#31383d; --grid:#22272a;
+  --copper:#8fb3d9; --teal:#3bb8d0; --teal-ink:#5cc8dc; --data:#6f7c84; --warn:#e2a93b;
+  --hero-bg:#1b3149; --hero-ink:#ffffff; --hero-muted:#b9c8d6; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-text);font-size:16.5px;line-height:1.72;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+.prose{max-width:66ch}
+h1,h2{font-family:var(--f-display);line-height:1.08;text-wrap:balance;margin:0;text-transform:uppercase;letter-spacing:.02em;font-weight:500}
+h1{font-size:clamp(1.9rem,5vw,2.9rem)}
+h2{font-size:clamp(1.4rem,3vw,1.85rem)}
+h2 .sn{color:var(--teal);margin-right:.4em}
+h3{font-family:var(--f-display);font-size:1.12rem;font-weight:600;margin:6px 0 0;text-transform:uppercase;letter-spacing:.03em;color:var(--ink)}
+p{margin:0}
+a{color:var(--teal-ink)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+code{font-family:var(--f-mono);font-size:.86em}
+section,header{display:flex;flex-direction:column;gap:16px}
+header.hero{background:var(--hero-bg);color:var(--hero-ink);border-radius:4px;padding:32px clamp(18px,4vw,40px);gap:18px}
+header.hero .eyebrow{color:#7fd3e4}
+header.hero .lede{color:var(--hero-muted)}
+header.hero .spec{border-top-color:var(--teal)}
+header.hero .spec span{color:var(--hero-muted)}
+.eyebrow{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-ink)}
+.lede{font-size:1.12rem;max-width:62ch}
+.standfirst{font-size:1.08rem;max-width:64ch;color:var(--ink)}
+sup a{font-family:var(--f-mono);font-size:.72em;text-decoration:none}
+.pull{font-family:var(--f-display);font-size:1.35rem;line-height:1.3;font-weight:500;max-width:30ch;border-left:3px solid var(--teal);padding-left:16px;color:var(--ink)}
+
+.specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.spec{border-top:2px solid var(--ink);padding-top:8px;display:flex;flex-direction:column;gap:2px;font-family:var(--f-ui)}
+.spec b{font-family:var(--f-display);font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums}
+.spec span{font-size:.85rem;color:var(--muted)}
+
+.plate{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:10px;margin:0}
+.plate figcaption{font-family:var(--f-ui);font-size:.88rem;color:var(--muted);max-width:76ch}
+.plate figcaption b{color:var(--ink)}
+.figscroll{overflow-x:auto}
+.figscroll svg{display:block;width:100%;min-width:560px;height:auto}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.btn{font:500 .72rem var(--f-ui);letter-spacing:.08em;text-transform:uppercase;background:var(--teal);color:#fff;border:0;border-radius:100px;padding:6px 14px;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-family:var(--f-ui);font-size:.87rem;line-height:1.5}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 .7rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td b{font-weight:500}
+tr:last-child td{border-bottom:0}
+.tcap{font-family:var(--f-ui);font-size:.86rem;color:var(--muted);max-width:74ch}
+.tcap b{color:var(--ink)}
+
+ol.refs{margin:0;padding-left:1.8em;font-family:var(--f-ui);font-size:.85rem;display:flex;flex-direction:column;gap:4px}
+
+/* figure primitives */
+svg text{font-family:var(--f-mono);fill:var(--ink)}
+svg .lbl{font-size:10px;letter-spacing:.06em;fill:var(--muted)}
+svg .ttl{font-size:12px;font-weight:500}
+svg .blk{fill:var(--panel);stroke:var(--ink);stroke-width:1.25}
+svg .wire{fill:none;stroke:var(--ink);stroke-width:1.25}
+svg .gridl{stroke:var(--grid);stroke-width:1}
+@keyframes cut{0%,55%{opacity:1}60%,95%{opacity:.15}100%{opacity:1}}
+.cut{opacity:1}
+@keyframes offl{0%,55%{opacity:0}60%,95%{opacity:1}100%{opacity:0}}
+.offl{display:none}
+.paused .cut,.paused .offl{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.cut{animation:none;opacity:1}.offl{animation:none;opacity:0}.btn[data-toggle]{display:none}}
+table.eval{min-width:760px}
+table.eval td{white-space:nowrap}
+table.eval td:first-child{white-space:normal;min-width:150px}
+table.eval i{font-style:normal;letter-spacing:.12em;font-size:.95rem}
+table.eval i.r3{color:var(--teal-ink)} table.eval i.r2{color:var(--copper)} table.eval i.r1{color:var(--data)}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Technical article · 27-minute read · November 2026</div>
+  <h1>A data-centre chip in a laptop: what RTX Spark changes for one user and for the enterprise</h1>
+  <p class="lede">Since mid-October 2026, Windows laptops have shipped with NVIDIA's Grace Blackwell superchip, the same class of silicon as the DGX Spark desktop. They can run large language models with no cloud connection at all. This article looks at what that makes possible, where it falls short, and how a fleet of these machines can work with on-premises GPU servers and a frontier model in the cloud, based on a hybrid system we built and tested.</p>
+  <div class="specs">
+    <div class="spec"><b>up to 128 GB</b><span>memory shared by CPU and GPU</span></div>
+    <div class="spec"><b>6,144</b><span>Blackwell CUDA cores, 20-core Grace CPU</span></div>
+    <div class="spec"><b>$2,600–7,000</b><span>launch price range, six laptop makers</span></div>
+    <div class="spec"><b>45–140 W</b><span>configurable chip power, set by the laptop maker</span></div>
+  </div>
+</header>
+
+<!-- ============================================================ 1 -->
+<section id="s1">
+  <h2><span class="sn">1</span>A new kind of laptop</h2>
+  <p class="standfirst">For three years, running a capable language model meant one of two things: renting one in the cloud, or buying a server. RTX Spark adds a third option that fits in a bag.</p>
+  <p class="prose">The chip behind it, GB10, combines an Arm CPU and a Blackwell GPU that share one pool of memory. Until this autumn it shipped only in the DGX Spark, a compact Linux desktop for AI developers. Under the name <b>RTX Spark</b> (chip N1X, co-designed with MediaTek), NVIDIA and Microsoft have now put it into Windows laptops and small desktops.<sup><a href="#r1">[1]</a></sup> It comes in two versions. The full chip pairs a 20-core CPU with a 6,144-core GPU and 24 to 128 GB of memory. A lighter, laptop-only version has 18 CPU cores, 5,120 GPU cores and 24 or 32 GB.<sup><a href="#r2">[2]</a></sup></p>
+  <p class="prose">What matters most is not the core count but the memory. A conventional laptop GPU has 8 to 24 GB of its own memory, and a model must fit there to run quickly. Here the GPU draws on a large share of a single pool, so models that until recently needed a server or a workstation now fit in a laptop. Six manufacturers shipped first models in October, at prices that put them firmly in the premium class.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Laptop</th><th>Memory options</th><th>Weight</th><th>Price range (USD)</th></tr></thead>
+      <tbody>
+        <tr><td>Microsoft Surface Laptop Ultra 15″</td><td class="n">24 · 32 · 48 · 64 · 128 GB</td><td class="n">2.0 kg</td><td class="n">2,600 – 5,900</td></tr>
+        <tr><td>ASUS ProArt P14</td><td class="n">24 · 32 · 48 · 128 GB</td><td class="n">1.48 kg</td><td class="n">2,600 – 6,500</td></tr>
+        <tr><td>ASUS ProArt P16</td><td class="n">24 · 32 · 64 · 128 GB</td><td class="n">1.77 kg</td><td class="n">2,800 – 7,000</td></tr>
+        <tr><td>Lenovo Yoga 9n</td><td class="n">32 · 64 GB</td><td class="n">1.94 kg</td><td class="n">3,000 – 4,500</td></tr>
+        <tr><td>HP OmniBook Ultra 16</td><td class="n">32 · 64 GB</td><td class="n">2.22 kg</td><td class="n">3,200 – 5,000+</td></tr>
+        <tr><td>Dell XPS 16 Creator Edition</td><td class="n">32 – 128 GB</td><td class="n">2.02 kg</td><td class="n">from 3,800</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tcap"><b>Table 1.</b> Launch models as listed by PCWorld at preorder.<sup><a href="#r3">[3]</a></sup> MSI's Prestige N16 Flip starts at $3,300.<sup><a href="#r4">[4]</a></sup> No dedicated business lines (for example Dell Pro or HP EliteBook) had been announced at the time of writing.</p>
+</section>
+
+<!-- ============================================================ 2 -->
+<section id="s2">
+  <h2><span class="sn">2</span>What fits, and how fast it runs</h2>
+  <p class="prose">Two properties decide what a laptop can do with a model. <b>Memory</b> decides whether the model fits at all. <b>Memory bandwidth</b> decides how quickly it writes, because every generated word requires reading the model's active weights once. That is why mixture-of-experts models suit this hardware so well: they hold a great deal of knowledge but use only a small fraction of it for each word.</p>
+
+  <figure class="plate">
+    <div class="bar"><span class="eyebrow">Fig. 1 · Model memory footprint vs. laptop configuration</span></div>
+    <div class="figscroll">
+    <svg id="f1" viewBox="0 0 760 360" role="img" aria-label="Bar chart of model sizes from 4 to about 118 gigabytes against laptop memory configurations of 24, 32, 64 and 128 gigabytes, with a marker at 64 gigabytes showing the GPU share measured on a 128 gigabyte laptop.">
+      <g id="f1g"></g>
+    </svg>
+    </div>
+    <figcaption><b>Fig. 1.</b> The highlighted line marks the 128 GB configuration. Teal: fits with headroom. Amber: fits, but tight. Grey: too big. Weights only: a model also needs memory for its working context and for Windows itself, so leave 15–25% headroom. The amber line marks a finding from Windows Central's review: on a 128 GB Surface Laptop Ultra, the memory was split evenly and the GPU saw 64 GB.<sup><a href="#r5">[5]</a></sup> That is enough for gpt-oss-120b but not for larger models, unless the laptop maker allows a different split. Sizes: model repositories and NVIDIA.<sup><a href="#r6">[6]</a>,<a href="#r7">[7]</a></sup></figcaption>
+  </figure>
+
+  <p class="prose">The first independent measurements bear this out. Windows Central measured 49 tokens per second for Llama 3.1 8B on a 128 GB Surface Laptop Ultra, with the first word appearing after 0.4 seconds. That is faster than most people read. NVIDIA reports 84 tokens per second for its 24 GB Nemotron 3.5 Bolt, a 74-billion-parameter model compressed to two bits and designed for exactly these machines. Artificial Analysis ran a complete local agent task with Qwen3.8 27B in under 19 minutes. As a general computer the laptop is solid rather than exceptional: its CPU scores between Qualcomm's Snapdragon X Elite and Apple's M4 Max, and its graphics are comparable to an RTX 4070.<sup><a href="#r5">[5]</a>,<a href="#r7">[7]</a>,<a href="#r8">[8]</a></sup></p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Measurement</th><th>Result</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Llama 3.1 8B, text generation</td><td class="n">49 tokens/s · 0.40 s to first token</td><td>Windows Central<sup><a href="#r5">[5]</a></sup></td></tr>
+        <tr><td>Llama 2 13B, text generation</td><td class="n">27 tokens/s</td><td>Windows Central<sup><a href="#r5">[5]</a></sup></td></tr>
+        <tr><td>Nemotron 3.5 Bolt 74B (2-bit, 24 GB)</td><td class="n">84 tokens/s with a draft model</td><td>NVIDIA, via eesel<sup><a href="#r7">[7]</a></sup></td></tr>
+        <tr><td>Local agent workload, Qwen3.8 27B</td><td class="n">completed in 18.7 min</td><td>Artificial Analysis<sup><a href="#r8">[8]</a></sup></td></tr>
+        <tr><td>Stable Diffusion 1.5 (INT8)</td><td class="n">2.77 images/s</td><td>Windows Central<sup><a href="#r5">[5]</a></sup></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tcap"><b>Table 2.</b> Published measurements. Reviewers found performance nearly identical on battery and on the charger, and sustained generation slower than on high-wattage desktop GPUs.<sup><a href="#r5">[5]</a></sup></p>
+</section>
+
+<!-- ============================================================ 3 -->
+<section id="s3">
+  <h2><span class="sn">3</span>One user: an AI workstation that travels</h2>
+  <p class="prose">For an individual, the main change is independence. Capable models no longer need a network connection, a subscription or a data-processing agreement. In its review, Windows Central had the Hermes agent tidy a downloads folder and build a small website with Qwen3.8 27B running entirely on the laptop, without using a single cloud token.<sup><a href="#r5">[5]</a></sup></p>
+
+  <figure class="plate">
+    <div class="bar"><span class="eyebrow">Fig. 2 · Single-user mode</span></div>
+    <div class="figscroll">
+    <svg id="f2" viewBox="0 0 760 380" role="img" aria-label="Schematic of one laptop: apps and agents call a local model on the GPU, which reads files from shared memory. A dashed optional link to a cloud model is periodically cut to show the laptop keeps working offline. Other devices on the local network can use the laptop's model.">
+      <defs><pattern id="g2" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" class="gridl"/></pattern></defs>
+      <rect width="760" height="380" fill="url(#g2)"/>
+      <rect x="40" y="40" width="470" height="280" rx="10" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+      <path d="M20 332H530l-14 14H34z" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>
+      <text x="56" y="62" class="lbl">RTX SPARK LAPTOP · ONE CHIP, ONE MEMORY POOL</text>
+      <rect x="64" y="84" width="190" height="64" class="blk"/>
+      <text x="159" y="107" text-anchor="middle" class="ttl">APPS + AGENTS</text>
+      <text x="159" y="123" text-anchor="middle" class="lbl">coding · office · creative</text>
+      <text x="159" y="137" text-anchor="middle" class="lbl">Hermes · OpenClaw · VS Code</text>
+      <rect x="300" y="84" width="190" height="64" class="blk" style="stroke:var(--teal);stroke-width:2"/>
+      <text x="395" y="107" text-anchor="middle" class="ttl">LOCAL MODEL · GPU</text>
+      <text x="395" y="123" text-anchor="middle" class="lbl">CUDA · llama.cpp · Ollama</text>
+      <text x="395" y="137" text-anchor="middle" class="lbl">TensorRT-RTX</text>
+      <rect x="64" y="196" width="426" height="44" fill="var(--grid)" stroke="var(--ink)" stroke-width="1.2"/>
+      <text x="277" y="215" text-anchor="middle" class="ttl">UNIFIED MEMORY · 24–128 GB</text>
+      <text x="277" y="230" text-anchor="middle" class="lbl">model weights + context + your data, shared by CPU and GPU</text>
+      <g fill="var(--panel)" stroke="var(--ink)" stroke-width="1.2"><path d="M120 262v34a40 7 0 0 0 80 0v-34"/><ellipse cx="160" cy="262" rx="40" ry="7"/></g>
+      <text x="160" y="289" text-anchor="middle" class="ttl">FILES</text>
+      <path d="M254 106H300" class="wire"/><path d="M300 126H254" class="wire"/>
+      <path d="M395 148V196" stroke="var(--data)" stroke-width="5"/>
+      <path d="M160 240V255" stroke="var(--data)" stroke-width="5"/>
+      <rect x="580" y="60" width="160" height="56" class="blk"/>
+      <text x="660" y="83" text-anchor="middle" class="ttl">CLOUD MODEL</text>
+      <text x="660" y="99" text-anchor="middle" class="lbl">optional, hard steps</text>
+      <g class="cut"><path d="M490 100H580" stroke="var(--copper)" stroke-width="1.4" stroke-dasharray="5 4"/></g>
+      <text x="535" y="90" text-anchor="middle" class="lbl">ask first</text>
+      <g class="offl"><rect x="500" y="110" width="72" height="20" fill="var(--panel)" stroke="var(--warn)"/><text x="536" y="124" text-anchor="middle" class="lbl" style="fill:var(--warn)">OFFLINE</text></g>
+      <rect x="580" y="196" width="160" height="56" class="blk"/>
+      <text x="660" y="219" text-anchor="middle" class="ttl">OTHER DEVICES</text>
+      <text x="660" y="235" text-anchor="middle" class="lbl">same LAN · local API</text>
+      <path d="M490 224H580" class="wire" stroke-dasharray="2 3"/>
+      <text x="535" y="214" text-anchor="middle" class="lbl">LAN</text>
+    </svg>
+    </div>
+    <figcaption><b>Fig. 2.</b> Heavy traffic (grey) stays inside the chip and its memory pool. A cloud model is optional, and local work continues when the connection drops. Other machines on the same network can use the laptop's model through a local API such as Ollama or LM Studio.</figcaption>
+  </figure>
+
+  <p class="prose">This changes everyday work in practical ways. Drafts, source code and client documents are processed on the device, which makes questions about where data is sent much simpler. Work continues on a plane, at a client site or on an isolated network. Routine drafting, coding and summarising carry no per-token bill. Developers also gain a quieter advantage: the laptop runs the same CUDA software as a DGX Spark or a data-centre GPU, so a prototype built on the train can move to a server without being rewritten.</p>
+  <p class="prose">The limits are just as real. Even the best local models still trail frontier models on difficult reasoning, so a sensible setup keeps a cloud model available for the hard steps and asks before sending anything to it. The 24 and 32 GB configurations are restricted to small or heavily compressed models. Agent software is young: one reviewer could not get OpenClaw to connect at all.<sup><a href="#r5">[5]</a></sup> And NVIDIA's "all-day" battery claim had not been independently measured under AI load in any review we found.<sup><a href="#r9">[9]</a></sup> For home users, NVIDIA's free PAIR software can share local inference between several PCs, but its list of supported hardware does not yet name RTX Spark.<sup><a href="#r10">[10]</a></sup></p>
+</section>
+
+<!-- ============================================================ 4 -->
+<section id="s4">
+  <h2><span class="sn">4</span>The enterprise: a fleet of capable edge nodes</h2>
+  <p class="prose">For an organisation, one powerful laptop matters less than a thousand of them. Each RTX Spark laptop can act as an <b>edge node</b>: it reads sensitive material locally and returns only structured results to a central system. A frontier model in the cloud plans the work, and the laptops do the reading.</p>
+  <p class="prose">We built and tested this pattern as a reference system. A hub in the cloud runs the frontier model. Agents on local machines open a connection out to the hub and wait for work on it, so no firewall needs to let anything in. In the first live test on 3 November 2026, Claude Sonnet 5.5 orchestrated an agent that read four sample contracts with a 3-billion-parameter model on a local GPU. Across its first two requests Claude received 5.8 KB, consisting of document IDs, a health report and tool descriptions. A scan of the hub's request log found no text from any of the four contracts.</p>
+  <p class="pull">The cloud model plans. The laptop reads. The contract never leaves the building.</p>
+
+  <figure class="plate">
+    <div class="bar"><span class="eyebrow">Fig. 3 · Enterprise mode: laptops as edge nodes</span></div>
+    <div class="figscroll">
+    <svg id="f3" viewBox="0 0 760 430" role="img" aria-label="Enterprise schematic: a hub with a frontier model in an EU cloud region; four laptops and a shared GPU tier connect out to the hub through the trust boundary; device management pushes models and policies to the laptops; jobs go down, small results go up, data stays on each device.">
+      <defs><pattern id="g3" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" class="gridl"/></pattern></defs>
+      <rect width="760" height="430" fill="url(#g3)"/>
+      <text x="16" y="22" class="lbl">CLOUD</text>
+      <text x="16" y="182" class="lbl">ORGANISATION · OFFICES, HOME, ON THE ROAD</text>
+      <line x1="0" y1="160" x2="760" y2="160" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="14 4 2 4"/>
+      <text x="744" y="153" text-anchor="end" class="lbl" style="fill:var(--warn)">TRUST BOUNDARY · NODES DIAL OUT</text>
+      <rect x="250" y="44" width="200" height="66" class="blk" style="stroke:var(--teal);stroke-width:2"/>
+      <text x="350" y="66" text-anchor="middle" class="ttl">HUB · AI GATEWAY</text>
+      <text x="350" y="82" text-anchor="middle" class="lbl">identity · policy · routing</text>
+      <text x="350" y="96" text-anchor="middle" class="lbl">audit log · MCP</text>
+      <rect x="530" y="44" width="200" height="66" class="blk"/>
+      <rect x="534" y="48" width="192" height="58" fill="none" stroke="var(--ink)" stroke-width=".6"/>
+      <text x="630" y="70" text-anchor="middle" class="ttl">FRONTIER MODEL</text>
+      <text x="630" y="86" text-anchor="middle" class="lbl">Claude · Bedrock · Foundry</text>
+      <path d="M450 70H530M530 88H450" class="wire"/>
+      <rect x="30" y="44" width="170" height="66" class="blk" style="stroke-dasharray:4 3"/>
+      <text x="115" y="68" text-anchor="middle" class="ttl">DEVICE MGMT</text>
+      <text x="115" y="84" text-anchor="middle" class="lbl">Intune / MDM</text>
+      <text x="115" y="98" text-anchor="middle" class="lbl">models + policies</text>
+      <g id="laps"></g>
+      <rect x="560" y="320" width="180" height="72" class="blk"/>
+      <text x="650" y="342" text-anchor="middle" class="ttl">SHARED GPU TIER</text>
+      <text x="650" y="358" text-anchor="middle" class="lbl">DGX Spark cluster ·</text>
+      <text x="650" y="372" text-anchor="middle" class="lbl">private AI cloud</text>
+      <text x="650" y="386" text-anchor="middle" class="lbl">for models &gt; one laptop</text>
+      <path d="M650 320V250H440V110" class="wire" stroke-dasharray="6 3"/>
+    </svg>
+    </div>
+    <figcaption><b>Fig. 3.</b> Each laptop and the shared GPU tier open their own outbound connection to the hub (dashed). Jobs come down those connections and small checked results go back up. Documents and the local model's raw output never leave the device. Device management distributes approved models and policies.</figcaption>
+  </figure>
+
+  <p class="prose">This arrangement has several benefits. The first is data protection that can be shown, not just promised. Contracts, HR files and source code are read where they are stored, and only fields from a schema the organisation defined reach the cloud. That makes GDPR and NIS2 data-flow documentation shorter and, more importantly, checkable. The second is cost. Cloud spend now grows with the number of decisions rather than the volume of documents. In our illustrative calculation (section 7), a frontier model that sees only short findings reads about 19 times fewer tokens across 200 documents than one that reads every document. The third is resilience: assistants keep working during an outage or on the road. The fourth is that the organisation gains distributed inference capacity it already owns, running the same software stack as its servers. That lets teams prototype on a laptop and deploy to a DGX Spark cluster or a private AI cloud such as HPE Private Cloud AI without starting again.<sup><a href="#r11">[11]</a></sup></p>
+</section>
+
+<!-- ============================================================ 5 -->
+<section id="s5">
+  <h2><span class="sn">5</span>Routing work between laptops, GPU servers and the cloud</h2>
+  <p class="prose">A fleet is not uniform. A 32 GB laptop cannot hold a 120-billion-parameter model, a laptop on a train may have no connection, and some questions need public information that no internal system holds. The AI gateway therefore has to <b>route</b> each piece of work to the right place, and route it the right way.</p>
+  <p class="prose">The key architectural decision is to separate the <b>control plane</b> from the <b>data plane</b>. The gateway in the cloud makes decisions: who may do what, which model handles which step, and what gets logged. The data itself follows a different, shorter path. When a laptop needs a larger model than it can hold, its confidential input goes over the corporate network to an on-premises GPU pool, not up to the cloud and back down. The gateway issues the instruction; the documents never pass through it.</p>
+
+  <figure class="plate">
+    <div class="bar"><span class="eyebrow">Fig. 4 · Routing: control plane in the cloud, data plane on-premises</span></div>
+    <div class="figscroll">
+    <svg id="f4" viewBox="0 0 760 500" role="img" aria-label="Routing schematic. A cloud AI gateway holds a five-rule routing policy: planning goes to the frontier model, public research to a Hugging Face Space agent, confidential work that fits a laptop stays on the laptop, confidential work that is too large goes over the corporate network to an on-premises GPU pool, and offline laptops work locally. Thin dashed control lines run from laptops and the on-premises router up to the gateway; heavy data lines stay inside the corporate network.">
+      <defs><pattern id="g4" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" class="gridl"/></pattern></defs>
+      <rect width="760" height="500" fill="url(#g4)"/>
+      <text x="16" y="22" class="lbl">CLOUD</text>
+      <line x1="0" y1="182" x2="760" y2="182" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="14 4 2 4"/>
+      <text x="744" y="175" text-anchor="end" class="lbl" style="fill:var(--warn)">TRUST BOUNDARY</text>
+      <text x="16" y="202" class="lbl">ON-PREMISES · CORPORATE NETWORK</text>
+
+      <!-- cloud blocks -->
+      <rect x="20" y="52" width="170" height="64" class="blk" style="stroke:var(--warn);stroke-dasharray:4 3"/>
+      <text x="105" y="76" text-anchor="middle" class="ttl">HF SPACE AGENT</text>
+      <text x="105" y="92" text-anchor="middle" class="lbl">research · public web</text>
+      <text x="105" y="106" text-anchor="middle" class="lbl">smolagents</text>
+
+      <rect x="216" y="30" width="328" height="138" class="blk" style="stroke:var(--teal);stroke-width:2"/>
+      <text x="380" y="48" text-anchor="middle" class="ttl">AI GATEWAY · ROUTING POLICY</text>
+      <g id="rows"></g>
+
+      <rect x="570" y="52" width="170" height="64" class="blk"/>
+      <rect x="574" y="56" width="162" height="56" fill="none" stroke="var(--ink)" stroke-width=".6"/>
+      <text x="655" y="78" text-anchor="middle" class="ttl">FRONTIER MODEL</text>
+      <text x="655" y="94" text-anchor="middle" class="lbl">Claude · Bedrock</text>
+      <text x="655" y="106" text-anchor="middle" class="lbl">EU geography</text>
+
+      <path d="M544 76H570M570 96H544" class="wire"/>
+      <path d="M216 76H190M190 96H216" class="wire"/>
+
+      <!-- on-prem router + GPU pool -->
+      <rect x="290" y="222" width="180" height="52" class="blk"/>
+      <text x="380" y="244" text-anchor="middle" class="ttl">ON-PREM ROUTER</text>
+      <text x="380" y="260" text-anchor="middle" class="lbl">LiteLLM / vLLM router</text>
+      <path d="M380 222V168" class="wire" stroke-dasharray="5 3"/>
+
+      <rect x="520" y="212" width="224" height="150" fill="none" stroke="var(--ink)" stroke-dasharray="5 3"/>
+      <text x="532" y="228" class="lbl">ON-PREM GPU POOL</text>
+      <rect x="532" y="238" width="200" height="28" class="blk"/><text x="632" y="256" text-anchor="middle" class="ttl">POOL A · 120B-class · vLLM</text>
+      <rect x="532" y="272" width="200" height="28" class="blk"/><text x="632" y="290" text-anchor="middle" class="ttl">POOL B · vision / OCR</text>
+      <rect x="532" y="306" width="200" height="28" class="blk"/><text x="632" y="324" text-anchor="middle" class="ttl">POOL C · embeddings</text>
+      <text x="632" y="352" text-anchor="middle" class="lbl">DGX Spark · private AI cloud</text>
+      <path d="M470 252H532" stroke="var(--data)" stroke-width="5" fill="none"/>
+
+      <!-- laptops -->
+      <g id="lap4"></g>
+
+      <!-- plane labels -->
+      <text x="16" y="490" class="lbl">— — CONTROL PLANE: decisions, tokens, audit</text>
+      <text x="400" y="490" class="lbl" style="fill:var(--muted)">━━ DATA PLANE: stays on the corporate network</text>
+      <g id="pk4"></g>
+    </svg>
+    </div>
+    <figcaption><b>Fig. 4.</b> The gateway applies five rules; rule 4 is highlighted. Thin dashed lines are the control plane: laptops and the on-premises router hold outbound connections to the gateway and receive instructions on them. Heavy grey lines are the data plane, and they never cross the amber boundary. When a laptop needs a model larger than it can hold (rule 4), its input travels over the corporate network to the GPU pool, and only a short, checked result goes back up to the gateway.</figcaption>
+  </figure>
+
+  <p class="prose">Two details make this work in practice. First, the on-premises router and the GPU pool use the same outbound pattern as the laptops: they connect to the gateway and wait for instructions, so the data centre needs no new inbound rule either. Second, the routing policy is written in terms of <b>data classification</b> and <b>zone</b>, not individual models. A rule such as "confidential material may only be processed in the on-premises zone" holds whichever model is fashionable next year. The gateway refuses a route that breaks it, and the refusal is logged.</p>
+</section>
+
+<!-- ============================================================ 6 -->
+<section id="s6">
+  <h2><span class="sn">6</span>Architecture choices for the Hugging Face integration</h2>
+  <p class="prose">Our reference build uses Hugging Face in three roles. It hosts the hub itself as a Docker Space. It offers Hugging Face Inference Providers as one of the frontier-model options. And it runs a smolagents research agent as a separate Space that, like every other agent, connects out to the hub. For a pilot, this is hard to beat: a public HTTPS endpoint, secrets management and container builds come free, and the whole system can be online in minutes. Moving to production, however, means making several decisions explicitly.</p>
+  <p class="prose"><b>Hosting and availability.</b> A free CPU Space pauses after 48 hours without visitors, and every change to its secrets or hardware restarts the app.<sup><a href="#r12">[12]</a></sup> When the hub restarts, each agent's connection drops; agents reconnect automatically, but jobs in flight are lost. The hub also keeps its register of connected agents in memory, so it runs as a single instance. A production hub therefore belongs on paid hardware with sleep disabled, or on Azure Container Apps or an on-premises DMZ. It also needs a shared register, such as Redis, before it can run as more than one instance.</p>
+  <p class="prose"><b>Exposure and identity.</b> Claude connectors and remote agents can only reach a hub with a public HTTPS address. A private Space requires a Hugging Face token on every request, which conflicts with connectors that cannot add headers. The reference build therefore uses a public Space protected by its own hub and agent tokens. That is adequate for a pilot but not for an enterprise, which should add single sign-on through an identity-aware proxy, give each agent its own token, and rotate them.</p>
+  <p class="prose"><b>Where inference happens.</b> Hugging Face's router sends each request to the fastest available third-party provider unless a provider is pinned with a suffix on the model name.<sup><a href="#r13">[13]</a></sup> Each provider has its own data terms and locations. For workloads with residency requirements, the safer choices are a dedicated Hugging Face Inference Endpoint (AWS eu-west-1 in Ireland is the listed EU region, with a private-network option through AWS PrivateLink) or Claude through Amazon Bedrock with an EU geography. Claude in Microsoft Foundry is currently offered as Global Standard or US Data Zone deployments, so it does not by itself keep inference in the EU.<sup><a href="#r14">[14]</a>,<a href="#r15">[15]</a>,<a href="#r18">[18]</a></sup></p>
+  <p class="prose"><b>Agents in Spaces belong to the public zone.</b> The research agent runs outside the organisation and reads arbitrary web pages, which may contain instructions aimed at AI systems. It should never receive confidential input, and the gateway should enforce that by zone rather than rely on the model's judgement. Its outputs deserve the same schema discipline as on-premises results.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Topic</th><th>In the reference build</th><th>For production</th></tr></thead>
+      <tbody>
+        <tr><td><b>Hub hosting</b></td><td>Free Docker Space, single instance</td><td>Paid hardware with sleep disabled, or Azure Container Apps / on-prem DMZ; shared agent register before scaling out</td></tr>
+        <tr><td><b>Access</b></td><td>Public URL, hub and agent tokens</td><td>Single sign-on in front; per-agent tokens with rotation; allow-lists where possible</td></tr>
+        <tr><td><b>Agent connections</b></td><td>Outbound WebSocket, pings every 20 s, auto-reconnect</td><td>Idempotent tools, job timeouts and retries; a durable queue for long-running jobs</td></tr>
+        <tr><td><b>Frontier via Hugging Face</b></td><td>Router picks the provider</td><td>Pin the provider, check its data terms; dedicated EU endpoint or Claude via an EU geography (e.g. Bedrock) for regulated data</td></tr>
+        <tr><td><b>Space-hosted agents</b></td><td>smolagents with web search</td><td>Public data only, enforced by zone in the gateway; schema-checked outputs</td></tr>
+        <tr><td><b>Secrets</b></td><td>Space secrets (write-only)</td><td>Separate least-privilege tokens for inference and deployment; rotation; never in files</td></tr>
+        <tr><td><b>Logs</b></td><td>Request log on the container's temporary disk</td><td>Ship to a SIEM or Log Analytics with a retention policy; Space disks are wiped on restart</td></tr>
+        <tr><td><b>Model distribution</b></td><td>Models pulled per machine</td><td>Approved catalogue mirrored internally from the Hugging Face Hub, pushed by device management</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tcap"><b>Table 3.</b> Hugging Face integration: pilot defaults and production choices.</p>
+</section>
+
+<!-- ============================================================ 7 -->
+<section id="s7">
+  <h2><span class="sn">7</span>Tokens saved: where the savings come from</h2>
+  <p class="prose">The economic case for hybrid AI rests on one observation: a frontier model is billed by the token, and most tokens in a document-heavy workflow are document text. If the cloud model reads every contract, invoice or log file, its bill grows with the size of the archive. If it reads only short, structured findings produced on local hardware, its bill grows with the number of decisions instead.</p>
+
+  <figure class="plate">
+    <div class="bar"><span class="eyebrow">Fig. 5 · Cloud input tokens vs. documents processed (illustrative)</span></div>
+    <div class="figscroll">
+    <svg id="f5" viewBox="0 0 760 330" role="img" aria-label="Line chart: tokens sent to the frontier model rise steeply with the number of documents in a cloud-only design and slowly in the hybrid design; at 200 documents the difference is about 19 times under the stated assumptions.">
+      <g id="f5g"></g>
+    </svg>
+    </div>
+    <figcaption><b>Fig. 5.</b> Model: cloud-only ≈ <i>N</i> × (4,000 document tokens + 150 overhead) + 2,000; hybrid ≈ <i>N</i> × (90 finding tokens + 120 tool overhead) + 2,000. A 4,000-token document is roughly a 6–8 page contract. These are assumptions for illustration, not measurements.</figcaption>
+  </figure>
+
+  <p class="prose">Under these assumptions the hybrid design sends the frontier model about 19 times fewer input tokens at 200 documents. The ratio is not a constant of nature, though. It is roughly the size of a document divided by the size of a finding, and several factors move it in practice.</p>
+  <p class="prose"><b>Short documents shrink the gain.</b> Tickets and e-mails of a few hundred tokens leave little to save, while long contracts, manuals and log archives save the most. <b>Conversations grow.</b> Every model turn resends the conversation so far, so a cloud-only design that has read ten documents pays for them again on every later turn, which makes the real gap larger than a single-pass estimate. <b>Tool descriptions are not free.</b> Each turn includes the description of every available tool, and with dozens of connected agents this overhead can rival the findings themselves. The gateway should offer each conversation only the tools that are relevant to it. <b>Caching narrows the gap.</b> Prompt caching, offered by the major providers, makes a repeated prefix much cheaper, which softens the cost of a cloud-only design that rereads the same material.</p>
+  <p class="prose">Local inference is not free either. It is paid up front, in hardware, power, device wear and the staff time to run it. A fair comparison is monthly cloud savings, the difference in tokens multiplied by the provider's price, set against the hardware cost spread over its useful life plus operations. The hub already records input and output tokens for every conversation, so this can be measured on real workloads rather than estimated. The figure that matters is cost per completed task at equal accuracy. A hybrid design that saves tokens but needs more human review has not saved anything.</p>
+</section>
+
+<!-- ============================================================ 8 -->
+<section id="s8">
+  <h2><span class="sn">8</span>How sovereign is sovereign enough?</h2>
+  <p class="prose">"Sovereign AI" is used to mean very different things, from choosing an EU cloud region to running entirely disconnected. It helps to treat sovereignty as a ladder and to decide, use case by use case, which rung is needed. Each step up gives more control and requires more operational work, and above a certain point it costs model capability.</p>
+
+  <figure class="plate">
+    <div class="bar"><span class="eyebrow">Fig. 6 · The sovereignty ladder</span></div>
+    <div class="figscroll">
+    <svg id="f6" viewBox="0 0 760 370" role="img" aria-label="Five ascending steps from public cloud API to air-gapped operation. A table under the steps shows whether prompts and documents leave the organisation at each level. The reference build sits at level 2, with an arrow showing it can move to level 3 by switching the orchestrator to a local model.">
+      <g id="f6g"></g>
+    </svg>
+    </div>
+    <figcaption><b>Fig. 6.</b> Higher levels keep more inside the organisation, at the cost of model capability and operational effort. The reference build sits at level 2. The same hub moves to level 3 by pointing it at an open-weight model on the organisation's own GPU servers, the setup shown in Fig. 7.</figcaption>
+  </figure>
+
+  <p class="prose"><b>Location is not the whole story.</b> Keeping inference inside the EU is a meaningful step. Amazon Bedrock, for example, offers an EU geography for Claude and pins some models to a single region.<sup><a href="#r18">[18]</a></sup> Claude in Microsoft Foundry is currently offered as Global Standard or US Data Zone deployments, so it does not by itself keep inference in the EU.<sup><a href="#r15">[15]</a></sup> Some organisations also weigh the provider's legal jurisdiction, not only where its servers stand. That is a policy and legal question each organisation must answer with its own advisers.</p>
+  <p class="prose"><b>The prompt itself is data.</b> In the hybrid design the documents stay home, but the user's question and the agents' findings go to the frontier model. A question such as "summarise the dismissal case against our employee in Aarhus" contains personal data before any document is read. The gateway should therefore classify prompts as well as documents, and route sensitive conversations to a local orchestrator, which is level 3 on the ladder.</p>
+  <p class="prose"><b>Open-weight models make level 3 realistic, with a gap.</b> The strongest open-weight models of 2026 come close to proprietary frontier models on many benchmarks, and models of that class run on clusters of a few DGX Sparks or on a private AI cloud. They still trail on the hardest planning tasks, and every model has its own licence terms that must be checked. Running them also makes the organisation responsible for updates, evaluation and security patches.</p>
+  <p class="prose"><b>Sovereignty includes the supply chain and the ability to keep working.</b> Model files downloaded from the Hugging Face Hub should be pinned to a specific version, checked against a hash and mirrored internally, like any other software dependency. Operational sovereignty means staying able to work if a cloud provider is unavailable, changes terms or raises prices. A hub that can switch its orchestrator from a cloud model to a local one, as the reference build can, keeps that option open without redesigning the system.</p>
+  <p class="prose">In practice most organisations will not choose one rung for everything. Public research can use level 0 or 1, routine document work fits level 2, personnel and legal matters belong at level 3, and a few environments, such as defence, critical infrastructure and some health data, need level 4. The value of a gateway that routes by data classification is that one platform can serve all of them, and an auditor can see which rule sent which request where.</p>
+</section>
+
+<!-- ============================================================ 9 -->
+<section id="s9r">
+  <h2><span class="sn">9</span>The realistic setup: everything on-premises, laptops optional</h2>
+  <p class="prose">The figures so far place the frontier model in the cloud. For many organisations that is the step they cannot take. Public bodies, health providers, defence suppliers and firms bound by client confidentiality often need the planning model itself inside their own walls. In that setting the realistic design looks different. The frontier-class model runs on the organisation's own GPU servers, the gateway sits in the data centre or a Kubernetes cluster, and agents run next to the systems that hold the data: ERP, document management, file shares. RTX Spark laptops become an optional extra for field and offline work rather than the backbone. The cloud is still there, but only for work classified as public.</p>
+
+  <figure class="plate">
+    <div class="bar"><span class="eyebrow">Fig. 7 · The realistic setup: on-premises frontier model, optional cloud and laptops</span></div>
+    <div class="figscroll">
+    <svg id="f7" viewBox="0 0 760 490" role="img" aria-label="On-premises schematic. Above the organisation boundary, drawn dashed as optional, sit a cloud frontier model and Hugging Face Spaces, reachable only for public work. Inside: users connect to the hub and AI gateway, which calls a frontier-class open-weight model on the organisation's own GPU servers. Agents next to ERP, document management and file shares, and optional RTX Spark laptops, dial out to the gateway over a control bus. Heavy data traffic runs from the agents down to a shared GPU worker tier. A model mirror supplies pinned, hash-checked weights to all tiers.">
+      <defs><pattern id="g7" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" class="gridl"/></pattern></defs>
+      <rect width="760" height="490" fill="url(#g7)"/>
+      <text x="16" y="22" class="lbl">OPTIONAL · CLOUD</text>
+      <rect x="200" y="32" width="220" height="62" class="blk" style="stroke-dasharray:4 3"/>
+      <text x="310" y="56" text-anchor="middle" class="ttl">CLOUD FRONTIER MODEL</text>
+      <text x="310" y="72" text-anchor="middle" class="lbl">Claude · Kimi via HF router</text>
+      <text x="310" y="85" text-anchor="middle" class="lbl">public work only</text>
+      <rect x="520" y="32" width="210" height="62" class="blk" style="stroke-dasharray:4 3"/>
+      <text x="625" y="56" text-anchor="middle" class="ttl">HUGGING FACE SPACES</text>
+      <text x="625" y="72" text-anchor="middle" class="lbl">web research agents</text>
+      <text x="625" y="85" text-anchor="middle" class="lbl">public work only</text>
+
+      <line x1="0" y1="118" x2="760" y2="118" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="14 4 2 4"/>
+      <text x="744" y="111" text-anchor="end" class="lbl" style="fill:var(--warn)">ORGANISATION BOUNDARY · ONLY PUBLIC WORK CROSSES</text>
+      <text x="16" y="138" class="lbl">ON-PREMISES · DATA CENTRE / KUBERNETES</text>
+      <path d="M310 148V94M430 148V63H520" class="wire" stroke-dasharray="3 4" style="stroke:var(--warn)"/>
+
+      <rect x="30" y="152" width="150" height="62" class="blk"/>
+      <text x="105" y="176" text-anchor="middle" class="ttl">USERS</text>
+      <text x="105" y="192" text-anchor="middle" class="lbl">chat · MCP clients</text>
+      <text x="105" y="205" text-anchor="middle" class="lbl">classification set</text>
+      <path d="M180 183H250" class="wire"/>
+      <rect x="250" y="148" width="220" height="70" class="blk" style="stroke:var(--teal);stroke-width:2"/>
+      <text x="360" y="170" text-anchor="middle" class="ttl">HUB · AI GATEWAY</text>
+      <text x="360" y="186" text-anchor="middle" class="lbl">classification policy · routing</text>
+      <text x="360" y="200" text-anchor="middle" class="lbl">audit log · MCP</text>
+      <rect x="520" y="144" width="210" height="80" class="blk"/>
+      <rect x="524" y="148" width="202" height="72" fill="none" stroke="var(--ink)" stroke-width=".6"/>
+      <text x="625" y="168" text-anchor="middle" class="ttl">FRONTIER-CLASS OPEN MODEL</text>
+      <text x="625" y="184" text-anchor="middle" class="lbl">Kimi K3 · GLM · DeepSeek</text>
+      <text x="625" y="198" text-anchor="middle" class="lbl">vLLM on own GPU servers</text>
+      <text x="625" y="211" text-anchor="middle" class="lbl">8–16 × H200 / B200</text>
+      <path d="M470 172H520M520 194H470" class="wire"/>
+
+      <path d="M360 218V246M105 246H645M105 246V272M275 246V272M445 246V272" class="wire" stroke-dasharray="6 3"/>
+      <path d="M645 246V272" class="wire" stroke-dasharray="2 4"/>
+      <text x="470" y="240" class="lbl">control bus · agents dial out</text>
+
+      <rect x="30" y="272" width="150" height="66" class="blk"/>
+      <text x="105" y="296" text-anchor="middle" class="ttl">AGENT · ERP</text>
+      <text x="105" y="312" text-anchor="middle" class="lbl">reads locally</text>
+      <text x="105" y="325" text-anchor="middle" class="lbl">schema gate</text>
+      <rect x="200" y="272" width="150" height="66" class="blk"/>
+      <text x="275" y="296" text-anchor="middle" class="ttl">AGENT · DMS</text>
+      <text x="275" y="312" text-anchor="middle" class="lbl">contracts · HR files</text>
+      <text x="275" y="325" text-anchor="middle" class="lbl">schema gate</text>
+      <rect x="370" y="272" width="150" height="66" class="blk"/>
+      <text x="445" y="296" text-anchor="middle" class="ttl">AGENT · FILES</text>
+      <text x="445" y="312" text-anchor="middle" class="lbl">shares · source code</text>
+      <text x="445" y="325" text-anchor="middle" class="lbl">schema gate</text>
+      <rect x="560" y="272" width="170" height="66" class="blk" style="stroke-dasharray:4 3"/>
+      <text x="645" y="292" text-anchor="middle" class="ttl">RTX SPARK LAPTOPS</text>
+      <text x="645" y="308" text-anchor="middle" class="lbl">optional edge nodes</text>
+      <text x="645" y="321" text-anchor="middle" class="lbl">field · offline work</text>
+      <text x="645" y="333" text-anchor="middle" class="lbl">model runs natively</text>
+
+      <path d="M105 338V398M275 338V398M445 338V368H330V398" fill="none" stroke="var(--data)" stroke-width="5" stroke-linecap="square" opacity=".55"/>
+      <rect x="30" y="398" width="320" height="66" class="blk"/>
+      <text x="190" y="420" text-anchor="middle" class="ttl">SHARED GPU WORKERS</text>
+      <text x="190" y="436" text-anchor="middle" class="lbl">DGX Spark cluster · 20–120B models</text>
+      <text x="190" y="450" text-anchor="middle" class="lbl">extraction, embeddings, OCR</text>
+      <rect x="400" y="398" width="330" height="66" class="blk" style="stroke-dasharray:2 3"/>
+      <text x="565" y="420" text-anchor="middle" class="ttl">MODEL MIRROR</text>
+      <text x="565" y="436" text-anchor="middle" class="lbl">pinned, hash-checked weights</text>
+      <text x="565" y="450" text-anchor="middle" class="lbl">licence record · feeds every tier</text>
+      <text x="16" y="482" class="lbl">HEAVY GREY = DATA PLANE, NEVER LEAVES THE BUILDING</text>
+    </svg>
+    </div>
+    <figcaption><b>Fig. 7.</b> All confidential work stays below the amber line. The gateway plans with a frontier-class open-weight model on the organisation's own GPU servers (request and answer, solid). Agents beside each data system and, optionally, RTX Spark laptops dial out to the gateway on the control bus (dashed). Heavy document traffic goes only from the agents to the shared GPU workers (heavy grey). Cloud models and Hugging Face Spaces (dashed, top) receive public work only. The model mirror keeps weights pinned and checked, as recommended in Section 8.</figcaption>
+  </figure>
+
+  <p class="prose"><b>The model is the expensive part.</b> Open-weight models now reach frontier class, but they are large. Moonshot's Kimi K3 has 2.8 trillion parameters, of which about 104 billion are active per token. Its weights ship in MXFP4 and total about 1.56 TB, so it needs roughly 2 TB of GPU memory once working memory is included. In practice that means two 8-GPU H200 servers; a single 8-GPU HGX H200 system is priced at $320,000 to $420,000.<sup><a href="#r19">[19]</a></sup> Open models in the 300–700-billion-parameter class fit one 8-GPU node, at some cost in planning quality. A DGX Spark cluster is the right home for the 20–120-billion-parameter workers that read the documents, not for the planner.</p>
+  <p class="prose"><b>The laptops become optional.</b> Once the agents run beside the data systems, no laptop has to hold the data. RTX Spark machines are still useful for people who work offline or travel with sensitive material, and they join the same control bus as any other agent. On Arm-based Windows, GPU access inside Docker containers is not documented, so the practical layout is the model running natively on the laptop and only the agent in a container.</p>
+  <p class="prose"><b>What the reference build needed.</b> Checking the build against this design exposed five gaps, all now closed. The hub could hold only one self-hosted model; it now reads any number of models from a configuration file, each tagged with a zone: cloud or on-premises. It had no routing rules; every conversation now carries a classification, and confidential conversations are refused by cloud models and never offered Hugging Face agents, in the chat, the API and the MCP connection alike. A hub in the cloud could not reach an on-premises model without opening a port; a small relay agent beside the GPU server now dials out and forwards requests. Thinking models such as Kimi return their reasoning in a separate field and expect it back during tool use; the hub now passes it through. And the laptop profile now runs the model on the host rather than in a container.</p>
+  <p class="prose">The same code therefore covers every rung of the sovereignty ladder. A cloud hub with on-premises agents sits at level 2. A cloud hub that uses an on-premises model through the relay keeps confidential conversations at level 3. A hub, model and agents that all run inside the organisation, with the cloud switched off, approach level 4.</p>
+</section>
+
+<!-- ============================================================ 10 -->
+<section id="s10s">
+  <h2><span class="sn">10</span>Standard building blocks, and the GPU tier on Kubernetes</h2>
+  <p class="prose">No single product delivers Fig. 7, but most of its boxes now have an open standard or a maintained framework behind them. The reference build implements each part in a few hundred lines so the mechanics can be seen. In production, an organisation would swap most of them for the components below and keep only the parts that are specific to its own data rules.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Part of Fig. 7</th><th>Standard or framework</th><th>Reference build today</th></tr></thead>
+    <tbody>
+      <tr><td><b>AI gateway, model routing</b></td><td>LiteLLM, Envoy AI Gateway, agentgateway (Apache 2.0, Linux Foundation): one OpenAI-compatible API, keys, fallbacks, rate limits<sup><a href="#r26">[26]</a></sup></td><td>Hub with a model list and zones</td></tr>
+      <tr><td><b>Tools and agents</b></td><td>MCP for tools; A2A for agent-to-agent calls. agentgateway and IBM ContextForge proxy both<sup><a href="#r26">[26]</a></sup></td><td>MCP endpoint for Claude; own outbound WebSocket protocol for agents</td></tr>
+      <tr><td><b>Agent sandbox</b></td><td>NVIDIA OpenShell (Apache 2.0): isolation enforced outside the agent, deny-by-default network egress, policy per file, network and process action<sup><a href="#r21">[21]</a>,<a href="#r22">[22]</a></sup></td><td>One container per agent, no inbound ports; no egress policy yet</td></tr>
+      <tr><td><b>Privacy routing</b></td><td>OpenShell privacy router: policy, not the agent, decides whether context goes to a local or a frontier model, and strips personal data from external calls<sup><a href="#r22">[22]</a></sup></td><td>Classification policy by zone, enforced on every model and tool call</td></tr>
+      <tr><td><b>Routing judgement</b></td><td>NVIDIA NeMo Switchyard (Apache 2.0, pre-alpha): strong or weak model per request, fallbacks, OpenAI–Anthropic translation, routing logs; vLLM Semantic Router as an alternative<sup><a href="#r27">[27]</a>,<a href="#r28">[28]</a></sup></td><td>Own router sets the classification; Switchyard picks the model within it</td></tr>
+      <tr><td><b>Guardrails</b></td><td>NeMo Guardrails with NIM microservices for content safety, topic control and jailbreak detection<sup><a href="#r23">[23]</a></sup></td><td>Schema gate on agent output only</td></tr>
+      <tr><td><b>Model serving</b></td><td>vLLM or SGLang; NVIDIA NIM as packaged containers; NVIDIA Dynamo with Grove for multi-node models with separate prefill and decode workers<sup><a href="#r24">[24]</a>,<a href="#r25">[25]</a></sup></td><td>vLLM profile for one server</td></tr>
+      <tr><td><b>GPU sharing</b></td><td>Kubernetes with the NVIDIA GPU Operator; KAI Scheduler or Run:ai for team quotas, gang scheduling and topology-aware placement<sup><a href="#r24">[24]</a></sup></td><td>Docker Compose on one host</td></tr>
+      <tr><td><b>Audit</b></td><td>OpenTelemetry traces, DCGM GPU metrics, export to the SIEM</td><td>JSON audit log and live traffic view</td></tr>
+    </tbody>
+  </table></div>
+  <p class="tcap"><b>Table 2.</b> What stays custom: the classification rules, the schema each agent returns, and the outbound connection pattern. These encode the organisation's own policy, and the frameworks are built to carry them.</p>
+
+  <p class="prose"><b>NVIDIA's secure-agent stack.</b> At GTC in March 2026, NVIDIA announced an Agent Toolkit with three parts: OpenShell, a runtime that sits between an agent and the machine and enforces policy from outside the agent process; NemoClaw, a reference stack that runs agents inside OpenShell with one command; and the AI-Q blueprint for organising agent tasks.<sup><a href="#r20">[20]</a>,<a href="#r22">[22]</a></sup> Because control sits outside the agent, a prompt injection that takes over the agent still cannot open a network connection the policy forbids. NVIDIA is working with Cisco, CrowdStrike, Google and Microsoft Security on compatibility with their tools.<sup><a href="#r20">[20]</a></sup> Its own documentation is candid about maturity: NemoClaw is in active development, describes a single-host workflow, and "is not a hardened, multi-tenant enterprise control plane". Fleet-wide policy, central audit export and single sign-on are still manual or on the roadmap.<sup><a href="#r21">[21]</a></sup> It is a sound sandbox for each agent today, not yet the management layer for a fleet.</p>
+
+  <figure class="plate">
+    <div class="bar"><span class="eyebrow">Fig. 8 · The shared GPU tier on Kubernetes</span></div>
+    <div class="figscroll">
+    <svg id="f8" viewBox="0 0 760 540" role="img" aria-label="Kubernetes schematic. The hub and AI gateway sit above a Kubernetes cluster. In the agents namespace, three agent pods, each inside an OpenShell sandbox, dial out to the gateway and read data systems in place. In the inference namespace, NeMo Guardrails microservices sit in front of worker model services and a frontier model served by Dynamo and Grove with separate prefill and decode pods. A platform layer provides the KAI or Run:ai scheduler, the GPU Operator and observability, on top of H200 or B200 GPU nodes and DGX Spark nodes.">
+      <defs><pattern id="g8" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" class="gridl"/></pattern></defs>
+      <rect width="760" height="540" fill="url(#g8)"/>
+      <text x="16" y="22" class="lbl">ON-PREMISES</text>
+      <rect x="40" y="30" width="180" height="56" class="blk" style="stroke:var(--warn)"/>
+      <text x="130" y="52" text-anchor="middle" class="ttl">LOCAL ROUTER</text>
+      <text x="130" y="68" text-anchor="middle" class="lbl">small model · raise-only</text>
+      <path d="M220 58H250" class="wire"/>
+      <rect x="250" y="30" width="260" height="56" class="blk" style="stroke:var(--teal);stroke-width:2"/>
+      <text x="380" y="52" text-anchor="middle" class="ttl">HUB · AI GATEWAY</text>
+      <text x="380" y="68" text-anchor="middle" class="lbl">policy · audit · MCP / A2A</text>
+
+      <rect x="16" y="110" width="728" height="414" fill="none" stroke="var(--ink)" stroke-width="1.25" stroke-dasharray="10 3"/>
+      <text x="28" y="128" class="lbl">KUBERNETES CLUSTER</text>
+      <text x="28" y="150" class="lbl">ns: agents</text>
+
+      <path d="M380 86V100H635V154M270 100V154M450 100V154M270 100H380" class="wire" stroke-dasharray="6 3"/>
+      <text x="520" y="96" class="lbl">outbound only</text>
+
+      <rect x="30" y="160" width="130" height="76" class="blk" style="stroke-dasharray:2 3"/>
+      <text x="95" y="186" text-anchor="middle" class="ttl">DATA SYSTEMS</text>
+      <text x="95" y="202" text-anchor="middle" class="lbl">ERP · DMS</text>
+      <text x="95" y="215" text-anchor="middle" class="lbl">file shares</text>
+      <path d="M160 198H184" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+
+      <g>
+        <rect x="184" y="154" width="172" height="88" fill="none" stroke="var(--warn)" stroke-width="1" stroke-dasharray="3 3"/>
+        <rect x="192" y="162" width="156" height="60" class="blk"/>
+        <text x="270" y="184" text-anchor="middle" class="ttl">AGENT POD · ERP</text>
+        <text x="270" y="200" text-anchor="middle" class="lbl">tools · schema gate</text>
+        <text x="270" y="236" text-anchor="middle" class="lbl" style="fill:var(--warn)">OpenShell sandbox</text>
+        <rect x="364" y="154" width="172" height="88" fill="none" stroke="var(--warn)" stroke-width="1" stroke-dasharray="3 3"/>
+        <rect x="372" y="162" width="156" height="60" class="blk"/>
+        <text x="450" y="184" text-anchor="middle" class="ttl">AGENT POD · DMS</text>
+        <text x="450" y="200" text-anchor="middle" class="lbl">tools · schema gate</text>
+        <text x="450" y="236" text-anchor="middle" class="lbl" style="fill:var(--warn)">OpenShell sandbox</text>
+        <rect x="549" y="154" width="172" height="88" fill="none" stroke="var(--warn)" stroke-width="1" stroke-dasharray="3 3"/>
+        <rect x="557" y="162" width="156" height="60" class="blk"/>
+        <text x="635" y="184" text-anchor="middle" class="ttl">MODEL RELAY POD</text>
+        <text x="635" y="200" text-anchor="middle" class="lbl">only if hub is in cloud</text>
+        <text x="635" y="236" text-anchor="middle" class="lbl" style="fill:var(--warn)">OpenShell sandbox</text>
+      </g>
+
+      <text x="28" y="264" class="lbl">ns: inference</text>
+      <path d="M270 242V272M450 242V272" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+      <path d="M635 242V322" class="wire"/>
+      <rect x="190" y="272" width="350" height="36" class="blk" style="stroke:var(--warn)"/>
+      <text x="365" y="287" text-anchor="middle" class="ttl">NEMO GUARDRAILS NIM</text>
+      <text x="365" y="300" text-anchor="middle" class="lbl">content safety · jailbreak · topic control</text>
+      <path d="M315 308V322" fill="none" stroke="var(--data)" stroke-width="5" opacity=".55"/>
+      <rect x="190" y="322" width="250" height="66" class="blk"/>
+      <text x="315" y="344" text-anchor="middle" class="ttl">WORKER MODELS</text>
+      <text x="315" y="360" text-anchor="middle" class="lbl">NIM / vLLM · 20–120B</text>
+      <text x="315" y="373" text-anchor="middle" class="lbl">extraction · embeddings</text>
+      <rect x="460" y="322" width="260" height="66" class="blk"/>
+      <rect x="464" y="326" width="252" height="58" fill="none" stroke="var(--ink)" stroke-width=".6"/>
+      <text x="590" y="344" text-anchor="middle" class="ttl">FRONTIER MODEL</text>
+      <text x="590" y="360" text-anchor="middle" class="lbl">Dynamo + Grove · Kimi / GLM</text>
+      <text x="590" y="373" text-anchor="middle" class="lbl">prefill pods | decode pods</text>
+      <rect x="540" y="30" width="150" height="56" class="blk" style="stroke:var(--teal)"/>
+      <text x="615" y="52" text-anchor="middle" class="ttl">SWITCHYARD</text>
+      <text x="615" y="68" text-anchor="middle" class="lbl">model per route</text>
+      <path d="M615 30V8" class="wire" stroke-dasharray="3 3" style="stroke:var(--warn)"/>
+      <text x="608" y="16" text-anchor="end" class="lbl" style="fill:var(--warn)">cloud models · public, internal only</text>
+      <path d="M510 58H540" class="wire"/>
+      <path d="M690 44H736V355H720" class="wire"/>
+      <text x="730" y="136" text-anchor="end" class="lbl">planning calls</text>
+
+      <text x="28" y="412" class="lbl">platform</text>
+      <rect x="30" y="420" width="220" height="50" class="blk"/>
+      <text x="140" y="441" text-anchor="middle" class="ttl">KAI SCHEDULER / RUN:AI</text>
+      <text x="140" y="457" text-anchor="middle" class="lbl">quotas · gang · topology</text>
+      <rect x="270" y="420" width="200" height="50" class="blk"/>
+      <text x="370" y="441" text-anchor="middle" class="ttl">GPU OPERATOR</text>
+      <text x="370" y="457" text-anchor="middle" class="lbl">drivers · MIG · metrics</text>
+      <rect x="490" y="420" width="230" height="50" class="blk"/>
+      <text x="605" y="441" text-anchor="middle" class="ttl">OBSERVABILITY</text>
+      <text x="605" y="457" text-anchor="middle" class="lbl">OpenTelemetry · DCGM · SIEM</text>
+      <rect x="30" y="482" width="690" height="30" class="blk" style="stroke-width:2"/>
+      <text x="375" y="501" text-anchor="middle" class="ttl">GPU NODES · 8× H200 / B200 SERVERS · DGX SPARK (ARM64)</text>
+    </svg>
+    </div>
+    <figcaption><b>Fig. 8.</b> The shared GPU tier as one Kubernetes cluster. Agents run as ordinary pods, each inside an OpenShell sandbox (amber dashed), and hold an outbound connection to the gateway, so they need no Kubernetes Service or Ingress. Their model calls pass NeMo Guardrails before reaching the worker models (heavy grey). The gateway's planning calls go to the frontier model, which Dynamo and Grove split across prefill and decode pods. The scheduler shares the GPUs between teams by quota. The local router (top left) classifies each conversation before any model sees it; Switchyard (top right) then picks the model within the route that classification allows.</figcaption>
+  </figure>
+
+  <p class="prose"><b>Two decisions, two layers.</b> Gateways route by rules: model name, fallbacks, load and budget. Two judgements need more than that, and they should not be made by the same component. The first is how sensitive a conversation is, which decides which models may see it. The second is which of the permitted models should answer, which is a trade-off between cost and capability. The reference build gives the first to a small router of its own, top left in Fig. 8, and the second to NVIDIA NeMo Switchyard.</p>
+  <p class="prose"><b>The router decides sensitivity.</b> It works by three rules that keep it safe. Fixed patterns, such as personal ID numbers, pay or health terms, run first and cannot be overridden. A small on-premises model then reads the prompt and may <i>raise</i> the classification, but never lower what the user chose, so a router fooled by a crafted prompt cannot send confidential data to the cloud. If the model is slow, down or answers in the wrong format, the conversation is treated as confidential. The router must itself run on-premises, because it reads every prompt before anything is known about it.</p>
+  <p class="prose"><b>Switchyard decides the model.</b> Switchyard is NVIDIA's open-source routing proxy, written in Rust and published under Apache 2.0; it replaces NVIDIA's earlier LLM Router blueprint.<sup><a href="#r28">[28]</a></sup> For each request it can ask a small judge whether a cheaper model is likely to solve the task, and send it to the strong model only if not. It also falls back to another model on errors and rate limits, translates between the OpenAI and Anthropic APIs, and logs every routing decision with its cost. It can use dedicated decision models, such as Jev, as judges. In the reference build, Switchyard holds one route per classification. The public and internal routes may choose between a local model and Claude. The confidential route contains on-premises models only. The hub's router picks the route, and Switchyard picks the model within it, so a mistaken Switchyard judgement can cost money but cannot move data across the boundary. Switchyard calls itself pre-alpha software that is not yet meant for production, so it belongs in the pilot rather than in a production commitment.<sup><a href="#r28">[28]</a></sup> vLLM Semantic Router is a comparable open alternative.<sup><a href="#r27">[27]</a></sup></p>
+  <p class="prose"><b>How a job runs in this cluster.</b> Today the reference build runs on Docker Compose on a single host, and Kubernetes is not required to try it. In a shared cluster, each agent becomes a Deployment with one or more replicas. The agent opens its connection to the gateway, so the cluster exposes nothing. When the planning model asks for a contract to be read, the gateway sends the job down the DMS agent's connection. The agent reads the file in place. It then calls the worker model through the guardrail service, a normal in-cluster address, and checks the answer against its schema. Only the checked result goes back up. The OpenShell policy for that pod allows exactly three destinations: the gateway, the guardrail service and the document system. Anything else is blocked and logged, even if a malicious document persuades the agent to try.</p>
+  <p class="prose"><b>Who gets the GPUs.</b> The agent pods need no GPU; the models do. The GPU Operator installs drivers and exposes GPUs to Kubernetes, and can split one GPU into isolated slices (MIG) for small worker models. The scheduler then decides placement. KAI Scheduler, which NVIDIA publishes as open source, and the commercial Run:ai give each team a guaranteed GPU quota that it can exceed while others are idle. They also start a multi-pod model either completely or not at all (gang scheduling), and keep its pods close together in the network.<sup><a href="#r24">[24]</a></sup> That is what makes a frontier-class model across 16 GPUs and a dozen small worker models share the same hardware. DGX Spark units can join as arm64 worker nodes for small models. Each container image must then exist for arm64, which is worth checking component by component.</p>
+</section>
+
+<!-- ============================================================ 11 -->
+<section id="s11e">
+  <h2><span class="sn">11</span>Evaluation: how the design compares</h2>
+  <p class="prose">There is no head-to-head benchmark for architectures like this, so the comparison below is qualitative. It sets the hybrid design against four kinds of solution an organisation is likely to be offered. Each is described as a type rather than a product, because products in every category change quickly and differ in their terms. The scores reflect how each type is built by default, not what a determined team can add to it.</p>
+
+  <div class="tbl"><table class="eval">
+    <thead><tr><th>Criterion</th><th>A · Cloud AI assistant</th><th>B · Hyperscaler agent platform</th><th>C · Turnkey private AI</th><th>D · Open-source stack, built in-house</th><th>E · This hybrid design</th></tr></thead>
+    <tbody>
+      <tr><td><b>Sensitive data stays in-house</b></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td></tr>
+      <tr><td><b>Access to the best models</b></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td></tr>
+      <tr><td><b>Mixed sensitivity on one platform</b></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td></tr>
+      <tr><td><b>Time to first value</b></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td></tr>
+      <tr><td><b>Low operating effort</b></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td></tr>
+      <tr><td><b>Predictable cost at volume</b></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td></tr>
+      <tr><td><b>Freedom to switch vendors</b></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td></tr>
+      <tr><td><b>Maturity and vendor support</b></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r3" role="img" aria-label="strong">●●●</i></td><td><i class="r2" role="img" aria-label="partial">●●○</i></td><td><i class="r1" role="img" aria-label="weak">●○○</i></td></tr>
+    </tbody>
+  </table></div>
+  <p class="tcap"><b>Table 3.</b> ●●● strong, ●●○ partial, ●○○ weak, by default. A: assistants in office suites or chat products, run in the provider's cloud. B: managed agent services from Azure, AWS or Google, with regional hosting and private networking. C: pre-integrated on-premises platforms such as HPE Private Cloud AI with NVIDIA software.<sup><a href="#r11">[11]</a></sup> D: gateway, vLLM, Kubernetes and sandboxing assembled by the organisation. E: the design in this article, as a reference build. Scores are the author's assessment, not measurements.</p>
+
+  <p class="prose"><b>Where the hybrid design wins.</b> Its distinctive strength is the routing layer. A single platform can send public research to the cloud, internal work to whichever model is allowed, and confidential work to on-premises models only, with the decision made in code, logged and shown to the user. Types A and B are built around one provider's cloud, and type C around the organisation's own hardware. Each is strong in its own zone but has no natural place for the other. Because every component in E speaks an open interface (OpenAI-compatible models, MCP tools, outbound WebSocket agents), any model or agent can be replaced without touching the rest. Its cost profile is also attractive: the frontier model sees findings rather than documents, which cut cloud tokens by roughly an order of magnitude in the illustration in Section 7.</p>
+  <p class="prose"><b>Where it falls short.</b> As built, E is a reference design, not a product. It runs one hub with no high availability, uses a shared token rather than single sign-on, and has no per-team separation. Its agent protocol is its own rather than A2A. The router's accuracy has not been measured against a labelled set of real prompts. Every one of these gaps has a standard remedy (Table 2), but closing them is the work that type D represents, and it needs a platform team. The on-premises frontier model is also capital-intensive: a Kimi K3-class model needs two 8-GPU servers before the first prompt is answered.</p>
+  <p class="prose"><b>Which to choose.</b> For organisations with little sensitive data, a cloud assistant (A) is the fastest and cheapest route, and building anything else is hard to justify. For organisations already committed to one hyperscaler, its agent platform (B) with regional hosting covers most needs, provided the most sensitive work is kept out of scope. For organisations whose core data cannot leave the building, a turnkey private platform (C) is the safest start, accepting a gap in model quality. The hybrid design (E) fits the large middle ground: data of mixed sensitivity, a wish to use the best models where the rules allow it, and an IT department willing to run a gateway. In practice it is less an alternative to B and C than a way to combine them. A turnkey platform can host the on-premises tier, a hyperscaler or Claude can supply the cloud tier, and the routing layer decides which tier each conversation may reach.</p>
+</section>
+
+<!-- ============================================================ 12 -->
+<section id="s9">
+  <h2><span class="sn">12</span>The challenges</h2>
+  <p class="prose">None of this comes free, and the first obstacle is price. At $2,600 to $7,000, RTX Spark laptops cost more than Intel or AMD machines with dedicated NVIDIA graphics, as reviewers noted.<sup><a href="#r5">[5]</a></sup> The premium pays off only for people who actually run large models locally. For office work alone it is hard to justify.</p>
+  <p class="prose">The second is that usable memory is not the number on the box. A 128 GB laptop that gives its GPU 64 GB cannot load an 80 GB model, so how the laptop maker splits memory must be checked before workloads are planned. The third is compatibility. Microsoft's x86 emulation handles most applications well, and reviewers found emulated software felt native.<sup><a href="#r5">[5]</a></sup> But kernel drivers, VPN clients, endpoint security agents and specialised business software still have to be tested one by one, and Android Studio's emulator is a known gap.<sup><a href="#r16">[16]</a></sup></p>
+  <p class="prose">For IT departments, the challenges are mostly operational. Model files of 4 to 60 GB per device have to be distributed, versioned, licence-checked and retired, a new job for endpoint management. A local agent that can read files and run tools is a new attack surface and needs the controls of any privileged software: least privilege, signed tools and logging. Microsoft and NVIDIA describe new Windows security primitives for on-device agents, but they are new and unproven at scale.<sup><a href="#r17">[17]</a></sup> Finally, local inference is not free; it is prepaid. Hardware, power and battery wear replace the token bill, and the comparison has to be made over the life of the device, on real workloads.</p>
+</section>
+
+<!-- ============================================================ 13 -->
+<section id="s10">
+  <h2><span class="sn">13</span>Conclusion</h2>
+  <p class="prose">RTX Spark makes the laptop a serious place to run AI. For the individual, the case rests on privacy, offline work and the absence of a per-token bill. A 64 GB configuration is the practical sweet spot for capable 20–35-billion-parameter models; 128 GB makes sense for developers who need 120-billion-parameter models, once the GPU memory share is confirmed.</p>
+  <p class="prose">For organisations, the larger opportunity lies in architecture rather than hardware. Treated as edge nodes in a hybrid system, a fleet of these laptops lets sensitive data be processed where it lives, while on-premises GPU servers take the work that is too large for a laptop and a frontier model does only the planning it is best at: in the cloud for most work, or on the organisation's own GPU servers where the data rules demand it. A gateway that separates control from data, routes by data classification and logs every decision turns that division of labour into something an auditor can verify.</p>
+  <p class="prose">The sensible way in is small. Start with ten devices and two use cases where data must not leave the device. Test the security stack under Arm. Measure accuracy, cloud tokens saved and battery life against a cloud-only baseline. Then build the central gateway and the approved model catalogue, and scale by use case rather than by device count.</p>
+</section>
+
+<section id="refs">
+  <h2>Sources</h2>
+  <ol class="refs">
+    <li id="r1"><a href="https://spectrum.ieee.org/nvidia-rtx-spark-windows-pc" target="_blank" rel="noopener">IEEE Spectrum (2026). NVIDIA RTX Spark Windows PC.</a></li>
+    <li id="r2"><a href="https://www.windowscentral.com/hardware/nvidia/nvidia-confirms-rtx-spark-configurations-and-availability-first-devices-expected-to-begin-shipping-as-soon-as-next-month-with-two-n1x-configs-on-offer" target="_blank" rel="noopener">Windows Central (2026). NVIDIA confirms RTX Spark configurations and availability.</a></li>
+    <li id="r3"><a href="https://www.pcworld.com/article/3256085/here-are-all-the-rtx-spark-laptops-available-at-launch-going-up-to-7000.html" target="_blank" rel="noopener">PCWorld (2026). All the RTX Spark laptops available at launch.</a></li>
+    <li id="r4"><a href="https://www.windowscentral.com/hardware/laptops/rtx-spark-laptops-list-available-buy" target="_blank" rel="noopener">Windows Central (2026). RTX Spark laptops you can preorder.</a></li>
+    <li id="r5"><a href="https://windowscentral.com/hardware/nvidia/rtx-spark-review-benchmarks-2026" target="_blank" rel="noopener">Windows Central (2026). Everything I learned testing RTX Spark for a week.</a></li>
+    <li id="r6"><a href="https://www.creativeainews.com/articles/dgx-spark-64gb-what-fits-price-2026/" target="_blank" rel="noopener">Creative AI News (2026). DGX Spark 64 GB: what fits.</a></li>
+    <li id="r7"><a href="https://www.eesel.ai/blog/nemotron-3-5-bolt" target="_blank" rel="noopener">eesel (2026). Nemotron 3.5 Bolt: NVIDIA's 24 GB local AI model, explained.</a></li>
+    <li id="r8"><a href="https://artificialanalysis.ai/es/articles/recent-open-weights-model-launches" target="_blank" rel="noopener">Artificial Analysis (2026). First AA-AgentPerf-Local results for an RTX Spark N1X laptop.</a></li>
+    <li id="r9"><a href="https://tomsguide.com/computing/cpus/i-didnt-believe-an-nvidia-rtx-spark-laptop-would-have-the-same-performance-both-on-and-off-the-charger-so-i-put-it-to-the-test" target="_blank" rel="noopener">Tom's Guide (2026). RTX Spark performance on and off the charger.</a></li>
+    <li id="r10"><a href="https://www.nvidia.com/en-us/ai-on-rtx/personal-ai-router/faq/" target="_blank" rel="noopener">NVIDIA. Personal AI Router (PAIR) FAQ.</a></li>
+    <li id="r11"><a href="https://www.storagenewsletter.com/2026/03/18/nvidia-gtc-2026-hpe-accelerates-secure-scalable-production-ready-ai-through-new-innovations-with-nvidia/" target="_blank" rel="noopener">StorageNewsletter (2026). HPE Private Cloud AI with NVIDIA.</a></li>
+    <li id="r12"><a href="https://huggingface.co/docs/huggingface_hub/main/guides/manage-spaces" target="_blank" rel="noopener">Hugging Face. Manage your Space (sleep time, secrets).</a></li>
+    <li id="r13"><a href="https://huggingface.co/docs/inference-providers/guides/function-calling" target="_blank" rel="noopener">Hugging Face. Inference Providers: function calling and provider selection.</a></li>
+    <li id="r14"><a href="https://huggingface.co/docs/inference-endpoints/support/faq" target="_blank" rel="noopener">Hugging Face. Inference Endpoints FAQ (regions, PrivateLink).</a></li>
+    <li id="r15"><a href="https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry" target="_blank" rel="noopener">Anthropic. Claude in Microsoft Foundry.</a></li>
+    <li id="r16"><a href="https://windowslatest.com/2026/06/02/nvidia-reveals-if-rtx-spark-n1x-can-run-all-your-windows-11-apps" target="_blank" rel="noopener">Windows Latest (2026). Can RTX Spark run all your Windows 11 apps?</a></li>
+    <li id="r17"><a href="https://creativestrategies.com/research/the-pc-built-for-agents/" target="_blank" rel="noopener">Creative Strategies (2026). The PC built for agents.</a></li>
+    <li id="r18"><a href="https://aihub.hkuspace.hku.hk/2026/08/07/enforcing-data-residency-with-single-region-claude-code-on-amazon-bedrock/" target="_blank" rel="noopener">AWS Machine Learning Blog (2026). Data residency with single-Region Claude on Amazon Bedrock.</a></li>
+    <li id="r19"><a href="https://featherless.ai/blog/how-to-run-kimi-k3-locally-hardware-requirements" target="_blank" rel="noopener">Featherless (2026). How to run Kimi K3 locally: hardware requirements.</a></li>
+    <li id="r20"><a href="https://thenextweb.com/news/nvidia-nemoclaw-openclaw-enterprise-security" target="_blank" rel="noopener">The Next Web (2026). Nvidia turns OpenClaw into an enterprise platform with NemoClaw.</a></li>
+    <li id="r21"><a href="https://docs.nvidia.com/nemoclaw/user-guide/openclaw/reference/enterprise-readiness" target="_blank" rel="noopener">NVIDIA. NemoClaw enterprise readiness and admin capability guidance.</a></li>
+    <li id="r22"><a href="https://futurumgroup.com/insights/openshell-redraws-the-agent-control-plane-open-standard-or-product-launch/" target="_blank" rel="noopener">Futurum (2026). OpenShell redraws the agent control plane.</a></li>
+    <li id="r23"><a href="https://venturebeat.com/ai/nvidia-boosts-agentic-ai-safety-with-nemo-guardrails-promising-better-protection-with-low-latency" target="_blank" rel="noopener">VentureBeat (2025). NVIDIA NeMo Guardrails NIM microservices for agent safety.</a></li>
+    <li id="r24"><a href="https://developer.nvidia.com/blog/smart-multi-node-scheduling-for-fast-and-efficient-llm-inference-with-nvidia-runai-and-nvidia-dynamo" target="_blank" rel="noopener">NVIDIA Technical Blog. Multi-node scheduling for LLM inference with Run:ai and Dynamo.</a></li>
+    <li id="r25"><a href="https://github.com/nvidia/grove" target="_blank" rel="noopener">NVIDIA. Grove: Kubernetes API for AI inference workloads (GitHub).</a></li>
+    <li id="r26"><a href="https://www.getmaxim.ai/articles/best-open-source-agent-gateways-for-mcp-and-a2a-in-2026/" target="_blank" rel="noopener">Maxim (2026). Open-source agent gateways for MCP and A2A.</a></li>
+    <li id="r27"><a href="https://vllm.ai/blog/2026-01-05-vllm-sr-iris" target="_blank" rel="noopener">vLLM (2026). vLLM Semantic Router v0.1 Iris.</a></li>
+    <li id="r28"><a href="https://github.com/NVIDIA-NeMo/Switchyard" target="_blank" rel="noopener">NVIDIA. NeMo Switchyard (GitHub), v0.3.0.</a></li>
+  </ol>
+</section>
+</div>
+
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  function el(t,a,p){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+  function tx(p,x,y,s,a){var t=el('text',a||{},p);t.setAttribute('x',x);t.setAttribute('y',y);t.textContent=s;return t;}
+  var reduce=true; // static edition: no motion
+  var paused={f1:reduce,f4:reduce,f5:reduce,f6:reduce};
+
+  // ---------------- Fig 1: memory fit chart
+  var g=document.getElementById('f1g');
+  var gp=el('pattern',{id:'g1',width:20,height:20,patternUnits:'userSpaceOnUse'},el('defs',{},g));el('path',{d:'M20 0H0V20',fill:'none','class':'gridl'},gp);
+  el('rect',{width:760,height:360,fill:'url(#g1)'},g);
+  var X0=250,X1=730,GB=130; function sx(v){return X0+(X1-X0)*v/GB}
+  var models=[
+    ['Nemotron 3.5 Bolt E4B',4,'~4 GB GPU memory'],
+    ['gpt-oss-20b (MXFP4)',11.8,'11 GiB'],
+    ['Nemotron 3.5 Bolt 74B (2-bit)',23.8,'23.8 GB'],
+    ['gpt-oss-120b (MXFP4)',63.4,'59 GiB'],
+    ['Nemotron 3 Super 120B (NVFP4)',80.3,'80.3 GB'],
+    ['DeepSeek V4 Flash 284B (~3-bit)',118,'~110 GiB']
+  ];
+  var cfgs=[24,32,64,128];
+  [0,16,32,48,64,80,96,112,128].forEach(function(v){el('line',{x1:sx(v),x2:sx(v),y1:40,y2:290,'class':'gridl'},g);tx(g,sx(v),306,v,{'text-anchor':'middle','font-size':10});});
+  tx(g,(X0+X1)/2,326,'GIGABYTES OF MEMORY (WEIGHTS ONLY)',{'text-anchor':'middle','class':'lbl'});
+  var bars=[];
+  models.forEach(function(m,i){
+    var y=56+i*38;
+    tx(g,X0-10,y+14,m[0],{'text-anchor':'end','font-size':11});
+    var r=el('rect',{x:X0,y:y,width:sx(m[1])-X0,height:20,fill:'var(--teal)',rx:2},g);
+    tx(g,sx(m[1])+6,y+14,m[2],{'font-size':10,'class':'lbl'});
+    bars.push({r:r,v:m[1]});
+  });
+  var cl=[];
+  cfgs.forEach(function(c){
+    var l=el('line',{x1:sx(c),x2:sx(c),y1:34,y2:290,stroke:'var(--ink)','stroke-width':1.2,'stroke-dasharray':'4 3'},g);
+    tx(g,sx(c),c===24?18:30,c+' GB',{'text-anchor':'middle','font-size':10.5,'font-weight':500});
+    cl.push({l:l,c:c});
+  });
+  el('line',{x1:sx(64),x2:sx(64),y1:40,y2:290,stroke:'var(--warn)','stroke-width':2.4,opacity:.55},g);
+  tx(g,sx(64)+6,284,'GPU share measured on a 128 GB laptop',{'font-size':9.5,style:'fill:var(--warn)'});
+  var idx=3;
+  function show(i){
+    var c=cfgs[i];
+    bars.forEach(function(b){var fit=b.v<=c*0.85, tight=!fit&&b.v<=c;b.r.setAttribute('fill',fit?'var(--teal)':tight?'var(--warn)':'var(--data)');b.r.setAttribute('opacity',fit||tight?1:.45);});
+    cl.forEach(function(k,j){k.l.setAttribute('stroke-width',j===i?2.4:1);k.l.setAttribute('stroke',j===i?'var(--teal)':'var(--ink)');});
+  }
+  show(idx);
+  setInterval(function(){if(!paused.f1){idx=(idx+1)%cfgs.length;show(idx);}},1800);
+
+  // ---------------- Fig 3: laptops
+  var L=document.getElementById('laps'), xs=[40,170,300,430], hubX=350,hubY=110;
+  xs.forEach(function(x,i){
+    var cx=x+55, top=250;
+    el('rect',{x:x,y:top,width:110,height:66,rx:5,'class':'blk'},L);
+    el('path',{d:'M'+(x-8)+' '+(top+72)+'H'+(x+118)+'l-6 7H'+(x-2)+'z',fill:'var(--panel)',stroke:'var(--ink)','stroke-width':1.1},L);
+    tx(L,cx,top+18,'LAPTOP '+(i+1),{'text-anchor':'middle','class':'ttl'});
+    tx(L,cx,top+32,['32 GB','64 GB','128 GB','64 GB'][i]+' · agent',{'text-anchor':'middle','class':'lbl'});
+    el('rect',{x:x+12,y:top+40,width:40,height:16,fill:'var(--grid)',stroke:'var(--ink)','stroke-width':.8},L);
+    tx(L,x+32,top+52,'model',{'text-anchor':'middle','font-size':8.5});
+    el('rect',{x:x+60,y:top+40,width:38,height:16,fill:'var(--grid)',stroke:'var(--ink)','stroke-width':.8},L);
+    tx(L,x+79,top+52,'data',{'text-anchor':'middle','font-size':8.5});
+    var path='M'+cx+' '+top+'V'+(200+i*6)+'H'+(hubX-30+i*20)+'V'+hubY;
+    el('path',{d:path,fill:'none',stroke:'var(--ink)','stroke-width':1.1,'stroke-dasharray':'6 3'},L);
+    if(i<3) el('path',{d:'M115 110V'+(150+i*4)+'H'+(cx-20)+'V'+top,fill:'none',stroke:'var(--muted)','stroke-width':1,'stroke-dasharray':'2 4',opacity:.8},L);
+  });
+
+  // ---------------- Fig 4: routing
+  var rowsG=document.getElementById('rows'), lapG=document.getElementById('lap4'), pk=document.getElementById('pk4');
+  var rules=[
+    ['1','plan · judge · write','frontier model'],
+    ['2','public research','HF Space agent'],
+    ['3','confidential, fits laptop','laptop model'],
+    ['4','confidential, too large','on-prem GPU pool'],
+    ['5','no connection','laptop, offline']
+  ];
+  var rowBg=[];
+  rules.forEach(function(r,i){
+    var y=70+i*20;
+    rowBg.push(el('rect',{x:224,y:y-13,width:312,height:18,fill:'var(--teal)',opacity:0,rx:2},rowsG));
+    tx(rowsG,232,y,r[0],{'font-size':10.5,'font-weight':500});
+    tx(rowsG,248,y,r[1],{'font-size':10.5});
+    tx(rowsG,420,y,'→ '+r[2],{'font-size':10.5,style:'fill:var(--teal-ink)'});
+  });
+  var laps=[{x:40,n:'LAPTOP A',m:'64 GB'},{x:210,n:'LAPTOP B',m:'32 GB'},{x:380,n:'LAPTOP C',m:'64 GB'}];
+  var top=392;
+  laps.forEach(function(l,i){
+    el('rect',{x:l.x,y:top,width:130,height:64,rx:5,'class':'blk'},lapG);
+    el('path',{d:'M'+(l.x-8)+' '+(top+70)+'H'+(l.x+138)+'l-6 7H'+(l.x-2)+'z',fill:'var(--panel)',stroke:'var(--ink)','stroke-width':1.1},lapG);
+    tx(lapG,l.x+65,top+17,l.n+' · '+l.m,{'text-anchor':'middle','class':'ttl'});
+    el('rect',{x:l.x+12,y:top+30,width:48,height:20,fill:'var(--grid)',stroke:'var(--ink)','stroke-width':.8},lapG);
+    tx(lapG,l.x+36,top+44,'model',{'text-anchor':'middle','font-size':9});
+    el('rect',{x:l.x+70,y:top+30,width:48,height:20,fill:'var(--grid)',stroke:'var(--ink)','stroke-width':.8},lapG);
+    tx(lapG,l.x+94,top+44,'data',{'text-anchor':'middle','font-size':9});
+  });
+  // control lines (dashed) and data line (heavy)
+  var ctrl=['M80 392V300H240V168','M250 392V318H270V168','M470 392V300H520V190H500V168'];
+  ctrl.forEach(function(d){el('path',{d:d,fill:'none',stroke:'var(--ink)','stroke-width':1,'stroke-dasharray':'5 3'},lapG);});
+  var badge=el('g',{opacity:0},lapG);
+  el('rect',{x:410,y:368,width:70,height:18,fill:'var(--panel)',stroke:'var(--warn)'},badge);
+  tx(badge,445,381,'OFFLINE',{'text-anchor':'middle','class':'lbl',style:'fill:var(--warn)'});
+  el('path',{d:'M300 392V340H380V274',fill:'none',stroke:'var(--data)','stroke-width':5},lapG);
+  tx(lapG,388,330,'corporate network',{'class':'lbl'});
+
+  var routes=[
+    [{d:'M80 392V300H240V168',c:'var(--copper)',r:3},{d:'M544 76H570',c:'var(--copper)',r:4},{d:'M570 96H544',c:'var(--teal)',r:3},{d:'M240 168V300H80V392',c:'var(--teal)',r:3}],
+    [{d:'M216 76H190',c:'var(--copper)',r:4},{d:'M190 96H216',c:'var(--teal)',r:3}],
+    [{d:'M134 422V412H76V422',c:'var(--data)',r:6},{d:'M76 422V412H134V422',c:'var(--data)',r:6}],
+    [{d:'M270 168V318H250V392',c:'var(--copper)',r:3},{d:'M300 392V340H380V274',c:'var(--data)',r:8},{d:'M470 252H532',c:'var(--data)',r:8},{d:'M532 252H470',c:'var(--teal)',r:4},{d:'M380 222V168',c:'var(--teal)',r:3}],
+    [{d:'M474 422V412H416V422',c:'var(--data)',r:6},{d:'M416 422V412H474V422',c:'var(--data)',r:6}]
+  ];
+  var probe=el('path',{d:'M0 0',fill:'none',stroke:'none'},pk);
+  function move(seg,done){
+    probe.setAttribute('d',seg.d);
+    var len=probe.getTotalLength(), dot=el('circle',{r:seg.r,fill:seg.c,stroke:'var(--panel)','stroke-width':1.2},pk);
+    var dur=Math.max(500,len*5), t0=null;
+    function step(ts){
+      if(paused.f4){t0=null;requestAnimationFrame(step);return;}
+      if(t0===null)t0=ts-(dot._p||0)*dur;
+      var u=Math.min(1,(ts-t0)/dur);dot._p=u;
+      probe.setAttribute('d',seg.d);
+      var p=probe.getPointAtLength(u*len);dot.setAttribute('cx',p.x);dot.setAttribute('cy',p.y);
+      if(u<1)requestAnimationFrame(step);else{dot.remove();done();}
+    }
+    requestAnimationFrame(step);
+  }
+  var cur=0;
+  function hl(i){rowBg.forEach(function(b,j){b.setAttribute('opacity',j===i?.16:0);});badge.setAttribute('opacity',i===4?1:0);}
+  function runRoute(){
+    hl(cur);
+    var segs=routes[cur], k=0;
+    (function next(){
+      if(k>=segs.length){setTimeout(function(){cur=(cur+1)%routes.length;runRoute();},700);return;}
+      move(segs[k++],next);
+    })();
+  }
+  hl(3);
+  if(!reduce) runRoute();
+
+  // ---------------- Fig 5: token model
+  (function(){
+    var g=document.getElementById('f5g');
+    var X0=90,X1=720,Y0=270,Y1=30,NMAX=200,YMAX=900000;
+    function sx(n){return X0+(X1-X0)*n/NMAX} function sy(t){return Y0-(Y0-Y1)*t/YMAX}
+    function cloud(n){return n*(4000+150)+2000} function hyb(n){return n*(90+120)+2000}
+    var gp=el('pattern',{id:'g5',width:20,height:20,patternUnits:'userSpaceOnUse'},el('defs',{},g));el('path',{d:'M20 0H0V20',fill:'none','class':'gridl'},gp);
+    el('rect',{width:760,height:330,fill:'url(#g5)'},g);
+    [0,50,100,150,200].forEach(function(n){el('line',{x1:sx(n),x2:sx(n),y1:Y1,y2:Y0,'class':'gridl'},g);tx(g,sx(n),Y0+16,n,{'text-anchor':'middle','font-size':10});});
+    [0,200000,400000,600000,800000].forEach(function(v){el('line',{x1:X0,x2:X1,y1:sy(v),y2:sy(v),'class':'gridl'},g);tx(g,X0-8,sy(v)+3.5,v?(v/1000)+'k':'0',{'text-anchor':'end','font-size':10});});
+    el('rect',{x:X0,y:Y1,width:X1-X0,height:Y0-Y1,fill:'none',stroke:'var(--ink)','stroke-width':1},g);
+    el('path',{d:'M'+sx(0)+' '+sy(cloud(0))+'L'+sx(200)+' '+sy(cloud(200)),stroke:'var(--copper)','stroke-width':2,fill:'none'},g);
+    el('path',{d:'M'+sx(0)+' '+sy(hyb(0))+'L'+sx(200)+' '+sy(hyb(200)),stroke:'var(--teal)','stroke-width':2.5,fill:'none'},g);
+    tx(g,sx(150)-6,sy(cloud(150))-8,'cloud-only: every document through the frontier model',{'text-anchor':'end','font-size':11,style:'fill:var(--copper)'});
+    tx(g,sx(200)-4,sy(hyb(200))-8,'hybrid: findings only',{'text-anchor':'end','font-size':11,style:'fill:var(--teal-ink)'});
+    tx(g,405,Y0+34,'DOCUMENTS PROCESSED (N)',{'text-anchor':'middle','class':'lbl'});
+    tx(g,22,150,'CLOUD INPUT TOKENS',{'text-anchor':'middle','class':'lbl',transform:'rotate(-90 22 150)'});
+    var cur=el('g',{},g), vl=el('line',{y1:Y1,y2:Y0,stroke:'var(--muted)','stroke-dasharray':'2 2'},cur);
+    var d1=el('circle',{r:4,fill:'var(--copper)'},cur), d2=el('circle',{r:4,fill:'var(--teal)'},cur);
+    var box=el('rect',{width:200,height:48,fill:'var(--panel)',stroke:'var(--line)'},cur);
+    var t=[el('text',{'font-size':10.5},cur),el('text',{'font-size':10.5},cur),el('text',{'font-size':10.5},cur)];
+    function place(n){
+      var x=sx(n);vl.setAttribute('x1',x);vl.setAttribute('x2',x);
+      d1.setAttribute('cx',x);d1.setAttribute('cy',sy(cloud(n)));d2.setAttribute('cx',x);d2.setAttribute('cy',sy(hyb(n)));
+      var bx=Math.min(x+10,X1-204),by=120;box.setAttribute('x',bx);box.setAttribute('y',by);
+      t.forEach(function(e,i){e.setAttribute('x',bx+8);e.setAttribute('y',by+14+i*14);});
+      t[0].textContent='N = '+Math.round(n)+' documents';
+      t[1].textContent='cloud-only ≈ '+Math.round(cloud(n)/1000)+'k · hybrid ≈ '+(hyb(n)/1000).toFixed(hyb(n)<10000?1:0)+'k';
+      t[2].textContent='ratio ≈ '+(cloud(n)/hyb(n)).toFixed(1)+'×';
+    }
+    place(200);
+    var t0=null,ph=0;
+    function tick(ts){if(!paused.f5){if(t0===null)t0=ts-ph;ph=(ts-t0)%10000;var u=ph/10000,w=u<.5?u*2:2-u*2;place(5+195*w);}else t0=null;requestAnimationFrame(tick);}
+    if(!reduce) requestAnimationFrame(tick);
+  })();
+
+  // ---------------- Fig 6: sovereignty ladder
+  (function(){
+    var g=document.getElementById('f6g');
+    var gp=el('pattern',{id:'g6',width:20,height:20,patternUnits:'userSpaceOnUse'},el('defs',{},g));el('path',{d:'M20 0H0V20',fill:'none','class':'gridl'},gp);
+    el('rect',{width:760,height:370,fill:'url(#g6)'},g);
+    var lv=[
+      ['0',['PUBLIC API'],['global routing'],'yes','yes'],
+      ['1',['REGIONAL','CLOUD'],['EU geography','e.g. Bedrock'],'yes · EU','yes · EU'],
+      ['2',['HYBRID'],['documents local','fields to cloud'],'yes','no'],
+      ['3',['SOVEREIGN','ORCHESTRATOR'],['open-weight model','on-prem'],'no','no'],
+      ['4',['AIR-GAPPED'],['no external','network'],'no','no']
+    ];
+    var W=106, base=232, cells=[];
+    function X(i){return 170+i*114;}
+    lv.forEach(function(l,i){
+      var x=X(i), h=62+i*32, top=base-h;
+      cells.push(el('rect',{x:x,y:top,width:W,height:h,fill:'var(--panel)',stroke:'var(--ink)','stroke-width':1.2},g));
+      tx(g,x+8,top+16,'LEVEL '+l[0],{'class':'lbl'});
+      l[1].forEach(function(line,j){tx(g,x+8,top+33+j*14,line,{'font-size':11,'font-weight':500});});
+      l[2].forEach(function(line,j){tx(g,x+W/2,base+18+j*13,line,{'text-anchor':'middle','font-size':9.5,'class':'lbl'});});
+      var c=function(v){return v.indexOf('yes')===0?'var(--warn)':'var(--teal-ink)'};
+      tx(g,x+W/2,base+70,l[3],{'text-anchor':'middle','font-size':10.5,style:'fill:'+c(l[3])});
+      tx(g,x+W/2,base+98,l[4],{'text-anchor':'middle','font-size':10.5,style:'fill:'+c(l[4])});
+    });
+    tx(g,20,base+24,'WHERE AI RUNS',{'class':'lbl'});
+    el('line',{x1:20,x2:740,y1:base+46,y2:base+46,stroke:'var(--line)'},g);
+    tx(g,20,base+70,'PROMPTS LEAVE ORG?',{'class':'lbl'});
+    el('line',{x1:20,x2:740,y1:base+82,y2:base+82,stroke:'var(--line)'},g);
+    tx(g,20,base+98,'DOCUMENTS LEAVE ORG?',{'class':'lbl'});
+    tx(g,170,20,'← MORE FRONTIER CAPABILITY',{'class':'lbl'});
+    tx(g,740,20,'MORE CONTROL, MORE OPERATIONS →',{'class':'lbl','text-anchor':'end'});
+    // reference build marker on level 2, arrow to level 3
+    var mx=X(2)+W/2, top2=base-(62+64), top3=base-(62+96), x3=X(3)+W/2;
+    var pin=el('g',{},g);
+    el('rect',{x:mx-58,y:top2-36,width:116,height:20,fill:'var(--teal)',rx:10},pin);
+    tx(pin,mx,top2-22,'REFERENCE BUILD',{'text-anchor':'middle','font-size':9.5,style:'fill:#fff;font-weight:500'});
+    el('path',{d:'M'+mx+' '+(top2-16)+'V'+top2,stroke:'var(--teal)','stroke-width':2},pin);
+    el('path',{d:'M'+(mx+40)+' '+(top2-36)+'C'+(mx+60)+' '+(top3-50)+' '+(x3-20)+' '+(top3-40)+' '+x3+' '+(top3-6),fill:'none',stroke:'var(--teal)','stroke-width':1.4,'stroke-dasharray':'5 3'},g);
+    el('path',{d:'M'+(x3-4)+' '+(top3-12)+'L'+x3+' '+(top3-4)+'L'+(x3+4)+' '+(top3-12),fill:'none',stroke:'var(--teal)','stroke-width':1.4},g);
+    tx(g,mx-64,top2-30,'switch orchestrator',{'text-anchor':'end','font-size':9.5,style:'fill:var(--teal-ink)'});
+    tx(g,mx-64,top2-18,'to a local model → level 3',{'text-anchor':'end','font-size':9.5,style:'fill:var(--teal-ink)'});
+    var k=2;
+    function hl(){cells.forEach(function(c,i){c.setAttribute('stroke',i===k?'var(--teal)':'var(--ink)');c.setAttribute('stroke-width',i===k?2.4:1.2);});}
+    hl();
+    setInterval(function(){if(!paused.f6){k=(k+1)%cells.length;hl();}},1600);
+  })();
+
+  // ---------------- pause buttons
+  document.querySelectorAll('[data-toggle]').forEach(function(btn){
+    var id=btn.dataset.toggle, svg=document.getElementById(id);
+    btn.addEventListener('click',function(){
+      var now=btn.textContent==='Pause';
+      if(id in paused) paused[id]=now;
+      else{ if(svg.pauseAnimations)(now?svg.pauseAnimations():svg.unpauseAnimations()); svg.classList.toggle('paused',now); }
+      btn.textContent=now?'Play':'Pause';
+    });
+  });
+  if(reduce){['f2','f3'].forEach(function(id){var s=document.getElementById(id);if(s&&s.pauseAnimations)s.pauseAnimations();});}
+})();
+</script>
+
+</body>
+</html>
